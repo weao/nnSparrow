@@ -1,7 +1,8 @@
-The code is tested in Ubuntu 14.04 LTS
+The code is tested on Ubuntu 14.04 LTS
 
-1. RUN example: just type 'make' in the current folder.
-2. IMPORT nnSparrow: just include all *.hpp files into your project.
+How to Use:
+1. RUN example: Just type 'make' in the current folder.
+2. IMPORT nnSparrow: Just include all *.hpp files into your project.
 
 =================================================================
 

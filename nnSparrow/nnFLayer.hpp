@@ -114,7 +114,7 @@ public:
 			for(int j=0;j<np;j++) {
 				d += _u_W[i*np+j] * pa[j];
 			}
-			_u_a[i] = d;
+			_u_a[i] += d;
 		}
 		sigmoid(_u_a, n);
 	}
@@ -127,9 +127,10 @@ public:
 		//cblas_dger(CblasRowMajor, n, np, 1.0, _u_delta, 1, _prev->getActivation(), 1, _u_dW, np);
 		double *pa = _prev->getActivation();
 		for(int i = 0; i < n; i++) {
+			double d = _u_delta[i];
 			for(int j = 0; j < np; j++) {
 				_u_dW[i*np+j] *= mu;
-				_u_dW[i*np+j] += _u_delta[i] * pa[j];
+				_u_dW[i*np+j] += d * pa[j];
 			}
 		}
 
@@ -137,7 +138,9 @@ public:
 		//cblas_dscal (n, mu, _u_db, 1);
 		//cblas_daxpy (n, 1.0, _u_delta, 1, _u_db, 1);
 		for(int i=0;i<n;i++) {
-			_u_db[i] = mu*_u_db[i] + _u_delta[i];
+			//_u_db[i] = mu*_u_db[i] + _u_delta[i];
+			_u_db[i] *= mu;
+			_u_db[i] += _u_delta[i];
 		}
 
 

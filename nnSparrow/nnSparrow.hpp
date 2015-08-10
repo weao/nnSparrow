@@ -70,6 +70,8 @@ public:
 		_train_batch_count = 10;
 		_avg_error = 0;
 		_ready = false;
+		_call_back = NULL;
+		_run_time = clock();
 	}
 
 	~nnSparrow() {
@@ -127,6 +129,7 @@ public:
 	void save(const char *path) {
 
 		std::ofstream fout(path);
+		fout << _momentum << " " << _gradient_alpha << " " << _weight_decay_parameter << std::endl;
 		fout << _layers.size() << std::endl;
 		for(int i=0;i<_layers.size();i++) {
 			_layers[i]->write(fout);
@@ -136,6 +139,7 @@ public:
 	void load(const char *path) {
 
 		std::ifstream fin(path);
+		fin >> _momentum >> _gradient_alpha >> _weight_decay_parameter;
 		int n = 0;
 		fin >> n;
 		for(int i=0;i<n;i++) {
@@ -287,7 +291,8 @@ public:
 					_avg_error = E;
 					E = 0;
 					_gradient_alpha *= 0.9;
-					this->_call_back(this);
+					if(this->_call_back)
+						this->_call_back(this);
 				}
 				_run_time = clock();
 			}

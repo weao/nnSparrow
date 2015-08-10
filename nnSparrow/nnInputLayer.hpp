@@ -40,11 +40,11 @@ public:
 
   }
 
-  nnInputLayer(int w, int h) : nnLayer(NULL, NULL) {
+  nnInputLayer(int w, int h, int ch) : nnLayer(NULL, NULL) {
 
     this->_unit_count = w*h;
     this->_prev_unit_count = 0;
-    this->_map_num = 1;
+    this->_map_num = ch;
     this->_width = w;
     this->_height = h;
     this->_layer_type = INPUT_LAYER;

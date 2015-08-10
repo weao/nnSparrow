@@ -167,9 +167,9 @@ public:
 		_ready = true;
 	}
 
-	nnLayer* addInputLayer(int w, int h) {
+	nnLayer* addInputLayer(int w, int h, int ch) {
 		reset();
-		nnInputLayer *l = new nnInputLayer(w, h);
+		nnInputLayer *l = new nnInputLayer(w, h, ch);
 		_layers.push_back(l);
 		return l;
 	}

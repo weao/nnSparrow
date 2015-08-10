@@ -244,7 +244,7 @@ public:
 
 
 
-	bool train(std::vector<std::vector<double> > &input, std::vector<std::vector<double> > &output) {
+	bool train(std::vector<std::vector<double> > &input, std::vector<int> &output) {
 		if(_layers.size() < 2)
 			return false;
 		if(input.size() <= 0 || input.size() != output.size())
@@ -260,8 +260,14 @@ public:
 
 		int len = input.size();
 		int dim = input[0].size();
-		int odim = output[0].size();
+		//int odim = output[0].size();
+		int odim = 0;
+		for(int i=0;i<output.size();i++) {
+			if(output[i]+1 > odim)
+				odim = output[i]+1;
+		}
 
+		double *ovec = new double[odim];
 
 		nnInputLayer *input_layer = (nnInputLayer*)_layers.front();
 		nnFLayer *output_layer = (nnFLayer*)_layers.back();
@@ -299,16 +305,21 @@ public:
 
 			//printf("%d\n", idx);
 			idx = rank[idx];
+
 			input_layer->inputSample(&input[idx][0], dim);
 
 			for(int j=1;j<sz;j++) {
 				_layers[j]->forward();
 			}
 
-			output_layer->calculateDelta(&output[idx][0], odim);
+
+			memset(ovec, 0, sizeof(double)*odim);
+			ovec[output[idx]] = 1;
+
+			output_layer->calculateDelta(ovec, odim);
 			double *a = output_layer->getActivation();
 			for(int i=0;i<odim;i++) {
-				double t = a[i] - output[idx][i];
+				double t = a[i] - ovec[i];
 				E += fabs(t);
 			}
 
@@ -324,11 +335,12 @@ public:
 		}
 
 		delete [] rank;
+		delete [] ovec;
 
 		return true;
 	}
 
-	bool predict(std::vector<double> &input, std::vector<double> &output) {
+	bool predict(std::vector<double> &input, int &output) {
 
 		if(_layers.size() < 2)
 			return false;
@@ -340,10 +352,14 @@ public:
 		for(int i=1;i<sz;i++)
 			_layers[i]->forward();
 
+		output = 0;
+
 		double *af = ((nnFLayer*)_layers.back())->getActivation();
-		for(int i=0;i<_layers.back()->getUnitCount();i++) {
-			output[i] = af[i];
+		for(int i=1;i<_layers.back()->getUnitCount();i++) {
+			if(af[i] > af[output])
+				output = i;
 		}
+
 
 		return true;
 	}

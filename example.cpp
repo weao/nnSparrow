@@ -8,7 +8,7 @@
 using namespace std;
 
 
-void loadTrain(vector<vector<double> > &data, vector<vector<double> > &label) {
+void loadTrain(vector<vector<double> > &data, vector<int> &label) {
 
   vector<size_t> mnist_labels;
   parse_mnist_images("../testcase/train-images.idx3-ubyte", &data);
@@ -16,13 +16,11 @@ void loadTrain(vector<vector<double> > &data, vector<vector<double> > &label) {
 
   int mx = *max_element(mnist_labels.begin(), mnist_labels.end());
   for(int i=0;i<mnist_labels.size();i++) {
-    vector<double> vec(mx+1, 0);
-    vec[mnist_labels[i]] = 1;
-    label.push_back(vec);
+    label.push_back(mnist_labels[i]);
   }
 }
 
-void loadTest(vector<vector<double> > &data, vector<vector<double> > &label) {
+void loadTest(vector<vector<double> > &data, vector<int> &label) {
 
   vector<size_t> mnist_labels;
   parse_mnist_images("../testcase/t10k-images.idx3-ubyte", &data);
@@ -30,14 +28,14 @@ void loadTest(vector<vector<double> > &data, vector<vector<double> > &label) {
 
   int mx = *max_element(mnist_labels.begin(), mnist_labels.end());
   for(int i=0;i<mnist_labels.size();i++) {
-    vector<double> vec(mx+1, 0);
-    vec[mnist_labels[i]] = 1;
-    label.push_back(vec);
+    label.push_back(mnist_labels[i]);
   }
 }
 
-vector<vector<double> > train_data, test_data;
-vector<vector<double> > train_label, test_label;
+vector<vector<double> > train_data;
+vector<int> train_label;
+vector<vector<double> > test_data;
+vector<int> test_label;
 
 void testResult(void *param) {
 
@@ -45,18 +43,12 @@ void testResult(void *param) {
 
   printf("\nTime consumption: %.2lfs\n", double(clock()-nn->getRunTime())/CLOCKS_PER_SEC);
   int num = 0, cnum = 0;
-  int odim = test_label[0].size();
-  vector<double> ret(odim, 0);
+  int ret = 0;
 
   for(int i=0;i<test_data.size();i++) {
     if(nn->predict(test_data[i], ret)) {
       num++;
-      int mj = 0;
-      for(int j=1;j<odim;j++) {
-        if(ret[j] > ret[mj])
-          mj = j;
-      }
-      if(test_label[i][mj] > 0) {
+      if(test_label[i] == ret) {
         cnum++;
       }
     }
@@ -89,7 +81,7 @@ int main()
   int idim = train_data[0].size();
 
   //output dimension
-  int odim = train_label[0].size();
+  int odim = *max_element(train_label.begin(), train_label.end())+1;
 
 
   nn.setEpochCount(20);
@@ -122,22 +114,7 @@ int main()
   }
   vector<double> ret(odim);
 
-  int num = 0;
-  int cnum = 0;
-  for(int i=0;i<test_data.size();i++) {
-    if(nn.predict(test_data[i], ret)) {
-      num++;
-      int mj = 0;
-      for(int j=1;j<odim;j++) {
-        if(ret[j] > ret[mj])
-          mj = j;
-      }
-      if(test_label[i][mj] > 0) {
-        cnum++;
-      }
-    }
-  }
-  cout<<double(cnum)/num<<endl;
+  testResult(&nn);
 
   //save network
   //nn.save("weights.txt");

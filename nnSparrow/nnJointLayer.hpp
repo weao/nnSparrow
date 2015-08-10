@@ -25,6 +25,7 @@
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "nnLayer.hpp"
+#include <vector>
 
 #ifndef __NN_JOINT_LAYER__
 

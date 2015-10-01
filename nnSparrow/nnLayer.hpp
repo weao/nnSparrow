@@ -32,6 +32,8 @@
 #include <cstdio>
 #include <cfloat>
 
+#include "nnActivation.hpp"
+
 #ifndef __NN_LAYER__
 #define __NN_LAYER__
 #define MIN(a,b) ((a)<(b)?(a):(b))
@@ -53,6 +55,9 @@ protected:
 	int _height;
 	int _map_num;
 	int _layer_type;
+
+	activation _act_f;
+	activation _d_act_f;
 public:
 	enum LAYER_TYPE {
 		DEFAULT_LAYER = 1,
@@ -60,7 +65,8 @@ public:
 		MAX_POOLING_LAYER,
 		AVG_POOLING_LAYER,
 		FWS_CONV_LAYER,
-		FULL_LAYER
+		FULL_LAYER,
+		SOFTMAX_LAYER
 	};
 
 	nnLayer(nnLayer *prev, nnLayer *next) {
@@ -131,18 +137,6 @@ public:
 		return _u_delta;
 	}
 
-	void sigmoid(double *a, int n) {
-
-		for(int i=0;i<n;i++) {
-			a[i] = 1.0 / ( exp(-a[i]) + 1.0 );
-		}
-	}
-	void dsigmoid(double *a, int n) {
-
-		for(int i=0;i<n;i++) {
-			a[i] = a[i] * ( 1.0 - a[i] );
-		}
-	}
 
 
 	virtual void init() = 0;

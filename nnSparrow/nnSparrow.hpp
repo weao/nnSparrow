@@ -32,6 +32,8 @@
 #include "nnFWSConvLayer.hpp"
 #include "nnMaxPoolingLayer.hpp"
 #include "nnAvgPoolingLayer.hpp"
+#include "nnPWSConvLayer.hpp"
+#include "nnSoftmaxLayer.hpp"
 #include <cstdlib>
 #include <vector>
 #include <fstream>
@@ -72,6 +74,7 @@ public:
 		_ready = false;
 		_call_back = NULL;
 		_run_time = clock();
+
 	}
 
 	~nnSparrow() {
@@ -159,6 +162,9 @@ public:
 				case nnLayer::MAX_POOLING_LAYER:
 					l = new nnMaxPoolingLayer();
 					break;
+				case nnLayer::SOFTMAX_LAYER:
+					l = new nnSoftmaxLayer();
+					break;
 				default:
 					break;
 			}
@@ -178,11 +184,23 @@ public:
 		return l;
 	}
 
-	nnLayer* addFWSConvLayer(int w, int h, int nm) {
+	nnLayer* addFWSConvLayer(int w, int h, int nm, int at = SIGMOID) {
 		if(_layers.empty())
 			return NULL;
 		nnLayer *pl = _layers.back();
-		nnFWSConvLayer *l = new nnFWSConvLayer(w, h, nm, pl, NULL);
+		nnFWSConvLayer *l = new nnFWSConvLayer(w, h, nm, at, pl, NULL);
+		_layers.push_back((nnLayer*)l);
+		if(pl) {
+			pl->setNextLayer((nnLayer*)l);
+		}
+		return l;
+	}
+
+	nnLayer* addPWSConvLayer(int w, int h, int sw, int sh, int nm, int at = SIGMOID) {
+		if(_layers.empty())
+			return NULL;
+		nnLayer *pl = _layers.back();
+		nnPWSConvLayer *l = new nnPWSConvLayer(w, h, sw, sh, nm, at, pl);
 		_layers.push_back((nnLayer*)l);
 		if(pl) {
 			pl->setNextLayer((nnLayer*)l);
@@ -220,19 +238,34 @@ public:
 	}
 
 
-	nnLayer* addFullLayer(int n) {
+	nnLayer* addFullLayer(int n, int at = SIGMOID) {
 
 		if(_layers.empty())
 			return NULL;
 		nnLayer *pl = _layers.back();
 
-		nnFLayer *l = new nnFLayer(n, pl, NULL);
+		nnFLayer *l = new nnFLayer(n, at, pl, NULL);
 		_layers.push_back((nnLayer*)l);
 		if(pl) {
 			pl->setNextLayer((nnLayer*)l);
 		}
 		return l;
 	}
+
+	nnLayer *addSoftmaxLayer(int n) {
+
+			if(_layers.empty())
+				return NULL;
+			nnLayer *pl = _layers.back();
+
+			nnFLayer *l = new nnSoftmaxLayer(n, pl, NULL);
+			_layers.push_back((nnLayer*)l);
+			if(pl) {
+				pl->setNextLayer((nnLayer*)l);
+			}
+			return l;
+	}
+
 
 	void prepare() {
 
@@ -340,7 +373,7 @@ public:
 		return true;
 	}
 
-	bool predict(std::vector<double> &input, int &output) {
+	bool predict(std::vector<double> &input, int &output, double *ovec=NULL) {
 
 		if(_layers.size() < 2)
 			return false;
@@ -358,6 +391,11 @@ public:
 		for(int i=1;i<_layers.back()->getUnitCount();i++) {
 			if(af[i] > af[output])
 				output = i;
+		}
+
+		if(ovec) {
+			for(int i=0;i<_layers.back()->getUnitCount();i++)
+				ovec[i] = af[i];
 		}
 
 

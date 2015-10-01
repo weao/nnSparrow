@@ -46,6 +46,7 @@ private:
 	double* _u_convb;
 	double* _u_dconvb;
 
+
 public:
 	nnFWSConvLayer(nnLayer *prev=NULL) : nnLayer(prev, NULL) {
 		_filter_size = 0;
@@ -57,15 +58,25 @@ public:
 		_u_dconvb = NULL;
 	}
 
-	nnFWSConvLayer(int fw, int fh, int nm, nnLayer *prev, nnLayer *next = NULL) : 	nnLayer(prev, next) {
+	nnFWSConvLayer(int fw, int fh, int nm, int at, nnLayer *prev, nnLayer *next = NULL) : 	nnLayer(prev, next) {
 
 		this->_filter_width = fw;
 		this->_filter_height = fh;
 		this->_filter_size = fw * fh;
 		this->_map_num = nm;// * prev->getMapNum();
 
+		this->_act_f = nnActivation::getActivation(at);
+		this->_d_act_f = nnActivation::getDActivation(at);
+
 		int w = prev ? 1 + (prev->getWidth() - fw) : 0;
 		int h = prev ? 1 + (prev->getHeight() - fh) : 0;
+
+		if(w < 0 || h < 0) {
+			w = 0;
+			h = 0;
+		}
+
+
 		this->_unit_count = w * h;
 		this->_width = w;
 		this->_height = h;
@@ -135,19 +146,6 @@ public:
 
 	}
 
-	void setTest() {
-
-		int nf = this->_filter_size;
-		int nm = this->_map_num;
-		for(int i=0;i<nf*nm;i++) {
-			_u_conv[i] = i % 4 + 1;
-		}
-		for(int i=0;i<nm;i++) {
-			_u_convb[i] = 1000;
-		}
-	}
-
-
 	void forward() {
 
 		//_u_a = _u_W * _prev->getActivation() + _u_convb;// [n, np]*[np, 1]
@@ -183,7 +181,7 @@ public:
 
 			}
 
-			sigmoid(pa, n);
+			_act_f(pa, n);
 		}
 	}
 	void backpropagation(double mu) {
@@ -207,6 +205,8 @@ public:
 
 		double *ppa = _prev->getActivation();
 		double *pdt = _u_delta;
+
+		//feature map loop
 		for(int mi = 0; mi < nm; mi++, pdt += n, pdc += nf) {
 
 			//int sh = np * (mi / cc);
@@ -274,7 +274,7 @@ public:
 		int n = _unit_count, nm = _map_num;
 		// mat = ( W'delta )
 		// f'(z), where a = f(z) is sigmoid funtion
-		dsigmoid(_u_a, n*nm);
+		_d_act_f(_u_a, n*nm);
 		//_u_delta = mat.cwiseProduct(df);
 		for(int i = 0; i < n*nm; i++) {
 			_u_delta[i] *= _u_a[i];

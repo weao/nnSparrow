@@ -11,8 +11,8 @@ using namespace std;
 void loadTrain(vector<vector<double> > &data, vector<int> &label) {
 
   vector<size_t> mnist_labels;
-  parse_mnist_images("../testcase/train-images.idx3-ubyte", &data);
-  parse_mnist_labels("../testcase/train-labels.idx1-ubyte", &mnist_labels);
+  parse_mnist_images("./testcase/train-images.idx3-ubyte", &data);
+  parse_mnist_labels("./testcase/train-labels.idx1-ubyte", &mnist_labels);
 
   int mx = *max_element(mnist_labels.begin(), mnist_labels.end());
   for(int i=0;i<mnist_labels.size();i++) {
@@ -23,8 +23,8 @@ void loadTrain(vector<vector<double> > &data, vector<int> &label) {
 void loadTest(vector<vector<double> > &data, vector<int> &label) {
 
   vector<size_t> mnist_labels;
-  parse_mnist_images("../testcase/t10k-images.idx3-ubyte", &data);
-  parse_mnist_labels("../testcase/t10k-labels.idx1-ubyte", &mnist_labels);
+  parse_mnist_images("./testcase/t10k-images.idx3-ubyte", &data);
+  parse_mnist_labels("./testcase/t10k-labels.idx1-ubyte", &mnist_labels);
 
   int mx = *max_element(mnist_labels.begin(), mnist_labels.end());
   for(int i=0;i<mnist_labels.size();i++) {
@@ -95,24 +95,25 @@ int main()
   //add input layer with 32 X 32 size and 1 channel
   nn.addInputLayer(32, 32, 1);
 
+  //nn.addPWSConvLayer(5, 5, 5, 5, 6);
+
   //add a full wights sharing convolutional layer with 5 X 5 filter size and 6 feature maps
   nn.addFWSConvLayer(5, 5, 6);
 
   //add a maxpooling layer with 2 X 2 filter size
   nn.addMaxPoolingLayer(2, 2);
 
-  //add a full connected layer with 120 units output
-  nn.addFullLayer(120);
+  //add a full connected layer with 120 units output, using tanh activation function.
+  nn.addFullLayer(120, TANH);
 
   //add a full connected layer(output layer) with #odim units output
-  nn.addFullLayer(odim);
+  nn.addSoftmaxLayer(odim);
 
 
   cout<<"Start training..."<<endl;
   if(nn.train(train_data, train_label)) {
     cout<<"Training finished!"<<endl;
   }
-  vector<double> ret(odim);
 
   testResult(&nn);
 

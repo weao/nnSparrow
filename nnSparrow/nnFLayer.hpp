@@ -43,13 +43,17 @@ public:
 		_u_db = NULL;
 	}
 
-	nnFLayer(int n, nnLayer *prev, nnLayer *next = NULL) :	nnLayer(prev, next) {
+	nnFLayer(int n, int at, nnLayer *prev, nnLayer *next = NULL) :	nnLayer(prev, next) {
 
 		this->_unit_count = n;
 		this->_prev_unit_count = prev ? prev->getTotalUnitCount() : 0;
 		this->_width = n;
 		this->_height = 1;
 		this->_map_num = 1;
+
+		this->_act_f = nnActivation::getActivation(at);
+		this->_d_act_f = nnActivation::getDActivation(at);
+
 
 		_u_dW = NULL;
 		_u_db = NULL;
@@ -102,11 +106,7 @@ public:
  		// [n, np]*[np, 1] + [n, 1]
 		//_u_a = _u_W * _prev->getActivation() + _u_b;
 		int n = _unit_count, np = _prev_unit_count;
-		//cblas_dcopy(n, _u_b, 1, _u_a, 1);
 		memcpy(_u_a, _u_b, n*sizeof(double));
-		// cblas_dgemv (CblasRowMajor,
-    //             CblasNoTrans, n, np,
-    //             1.0, _u_W, np, _prev->getActivation(), 1, 1.0, _u_a, 1);
 
 		double *pa = _prev->getActivation();
 		for(int i=0;i<n;i++) {
@@ -116,15 +116,14 @@ public:
 			}
 			_u_a[i] += d;
 		}
-		sigmoid(_u_a, n);
+		_act_f(_u_a, n);
+
 	}
 	void backpropagation(double mu) {
 
 		//accumulate dW, db
 		//_u_dW = mu*_u_dW + _u_delta * _prev->getActivation().transpose(); [n,1] * [1,np]
 		int n = _unit_count, np = _prev_unit_count;
-		//cblas_dscal(n*np, mu, _u_dW, 1);
-		//cblas_dger(CblasRowMajor, n, np, 1.0, _u_delta, 1, _prev->getActivation(), 1, _u_dW, np);
 		double *pa = _prev->getActivation();
 		for(int i = 0; i < n; i++) {
 			double d = _u_delta[i];
@@ -135,20 +134,14 @@ public:
 		}
 
 		//_u_db = mu*_u_db + _u_delta;
-		//cblas_dscal (n, mu, _u_db, 1);
-		//cblas_daxpy (n, 1.0, _u_delta, 1, _u_db, 1);
 		for(int i=0;i<n;i++) {
-			//_u_db[i] = mu*_u_db[i] + _u_delta[i];
 			_u_db[i] *= mu;
-			_u_db[i] += _u_delta[i];
+		 	_u_db[i] += _u_delta[i];
 		}
-
 
 		//t = (_u_W.transpose() * _u_delta); // [np, n] * [n, 1]
 		double *pdelta = _prev->getDelta();
 		if(pdelta) {
-
-			//cblas_dgemv(CblasRowMajor, CblasTrans, n, np, 1.0, _u_W, np, _u_delta, 1, 0.0, pdelta, 1);
 
 			memset(pdelta, 0, np*sizeof(double));
 			for(int j = 0; j < n; j++) {
@@ -170,27 +163,23 @@ public:
 		double rm = 1.0 / m;
 
 		//_u_W = _u_W - alpha * ( rm * _u_dW + lambda * _u_W );
-		//cblas_dscal(n*np, 1.0-alpha*lambda, _u_W, 1);
-		//cblas_daxpy(n*np, -alpha*rm, _u_dW, 1, _u_W, 1);
 		for(int i=0;i<n*np;i++) {
 			_u_W[i] -= alpha * (rm * _u_dW[i] + lambda * _u_W[i]);
 		}
 
 		//_u_b = _u_b - alpha * ( rm * _u_db );
-		//cblas_daxpy(n, -alpha*rm, _u_db, 1, _u_b, 1);
 		for(int i=0;i<n;i++) {
 			_u_b[i] -= alpha * (rm * _u_db[i]);
 		}
-
-
 
 	}
 	void updateDelta() {
 
 		// mat = ( W'delta )
 		// f'(z), where a = f(z) is sigmoid funtion
-		dsigmoid(_u_a, _unit_count);
-		//_u_delta = mat.cwiseProduct(df);
+
+		_d_act_f(_u_a, _unit_count);
+
 		for(int i=0;i<_unit_count;i++) {
 			_u_delta[i] *= _u_a[i];
 		}

@@ -184,7 +184,7 @@ public:
 			_act_f(pa, n);
 		}
 	}
-	void backpropagation(double mu) {
+	void backpropagation() {
 
 		//accumulate dW
 		//dW = _u_delta * _prev->getActivation().transpose();
@@ -197,9 +197,9 @@ public:
 		int fh = _filter_height;
 
 		//cblas_dscal(nm*nf, mu, _u_dconv, 1);
-		for(int i = 0; i < nm*nf; i++) {
-			_u_dconv[i] *= mu;
-		}
+		// for(int i = 0; i < nm*nf; i++) {
+		// 	_u_dconv[i] *= mu;
+		// }
 
 		double *pdc = _u_dconv;
 
@@ -234,7 +234,7 @@ public:
 			for(int i=0;i<n;i++) {
 				sum += pdt[i];
 			}
-			_u_dconvb[mi] *= mu;
+			// _u_dconvb[mi] *= mu;
 			_u_dconvb[mi] += sum;
 		}
 
@@ -281,15 +281,23 @@ public:
 		}
 	}
 
-	void updateParameters(int m, double alpha, double lambda) {
+	void updateParameters(int m, double alpha, double lambda, double mu) {
 
 		int n = _unit_count, nf = _filter_size, nm = _map_num;
 		double rm = 1.0 / m;
 		//_u_conv = _u_conv - alpha * ( rm * _u_dconv + lambda * _u_conv );
 		//cblas_dscal(nf*nm, 1-alpha*lambda, _u_conv, 1);
 		//cblas_daxpy(nf*nm, -alpha*rm, _u_dconv, 1, _u_conv, 1);
+
+		for(int i = 0; i < nm*nf; i++) {
+			_u_dconv[i] *= mu;
+		}
 		for(int i = 0; i < nf*nm; i++) {
 			_u_conv[i] -= alpha * ( rm * _u_dconv[i] + lambda * _u_conv[i] );
+		}
+
+		for(int mi = 0; mi < nm; mi++) {
+			_u_dconvb[mi] *= mu;
 		}
 
 		//_u_convb = _u_convb - alpha * (rm * _u_dconvb );

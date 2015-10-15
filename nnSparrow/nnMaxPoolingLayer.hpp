@@ -205,7 +205,7 @@ public:
 		}
 	}
 
-	void backpropagation(double mu) {
+	void backpropagation() {
 
 		double *ppd = _prev->getDelta();
 		const int n = _unit_count, np = _prev_unit_count, nm = _map_num;
@@ -227,7 +227,7 @@ public:
 	void updateDelta() {
 	}
 
-	void updateParameters(int m, double alpha, double lambda) {
+	void updateParameters(int m, double alpha, double lambda, double mu) {
 
 	}
 	int getTotalUnitCount() {

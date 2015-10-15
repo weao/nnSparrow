@@ -82,13 +82,13 @@ public:
   void updateDelta() {
 
   }
-	void backpropagation(double) {
+	void backpropagation() {
 
   }
 	void forward() {
 
   }
-	void updateParameters(int,double,double) {
+	void updateParameters(int,double,double,double) {
 
   }
   int getTotalUnitCount() {

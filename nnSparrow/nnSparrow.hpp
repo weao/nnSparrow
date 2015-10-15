@@ -357,12 +357,12 @@ public:
 			}
 
 			for(int j=sz-1;j>0;j--) {
-				_layers[j]->backpropagation(_momentum);
+				_layers[j]->backpropagation();
 			}
 
 			if(itr % _train_batch_count == 0) {
 				for(int j=sz-1;j>0;j--) {
-					_layers[j]->updateParameters(1, _gradient_alpha, _weight_decay_parameter);
+					_layers[j]->updateParameters(_train_batch_count, _gradient_alpha, _weight_decay_parameter, _momentum);
 				}
 			}
 		}

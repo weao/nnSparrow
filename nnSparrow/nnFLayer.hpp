@@ -119,7 +119,7 @@ public:
 		_act_f(_u_a, n);
 
 	}
-	void backpropagation(double mu) {
+	void backpropagation() {
 
 		//accumulate dW, db
 		//_u_dW = mu*_u_dW + _u_delta * _prev->getActivation().transpose(); [n,1] * [1,np]
@@ -128,14 +128,14 @@ public:
 		for(int i = 0; i < n; i++) {
 			double d = _u_delta[i];
 			for(int j = 0; j < np; j++) {
-				_u_dW[i*np+j] *= mu;
+				//_u_dW[i*np+j] *= mu;
 				_u_dW[i*np+j] += d * pa[j];
 			}
 		}
 
 		//_u_db = mu*_u_db + _u_delta;
 		for(int i=0;i<n;i++) {
-			_u_db[i] *= mu;
+			//_u_db[i] *= mu;
 		 	_u_db[i] += _u_delta[i];
 		}
 
@@ -156,17 +156,25 @@ public:
 
 
 	}
-	void updateParameters(int m, double alpha, double lambda) {
+	void updateParameters(int m, double alpha, double lambda, double mu) {
 
 
 		int n = _unit_count, np = _prev_unit_count;
 		double rm = 1.0 / m;
 
+		for(int i = 0; i < n; i++) {
+			for(int j = 0; j < np; j++) {
+				_u_dW[i*np+j] *= mu;
+			}
+		}
 		//_u_W = _u_W - alpha * ( rm * _u_dW + lambda * _u_W );
 		for(int i=0;i<n*np;i++) {
 			_u_W[i] -= alpha * (rm * _u_dW[i] + lambda * _u_W[i]);
 		}
 
+		for(int i=0;i<n;i++) {
+			_u_db[i] *= mu;
+		}
 		//_u_b = _u_b - alpha * ( rm * _u_db );
 		for(int i=0;i<n;i++) {
 			_u_b[i] -= alpha * (rm * _u_db[i]);

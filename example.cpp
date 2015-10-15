@@ -106,7 +106,7 @@ int main()
   //add a full connected layer with 120 units output, using tanh activation function.
   nn.addFullLayer(120, TANH);
 
-  //add a full connected layer(output layer) with #odim units output
+  //add a softmax layer(output layer) with #odim units output
   nn.addSoftmaxLayer(odim);
 
 

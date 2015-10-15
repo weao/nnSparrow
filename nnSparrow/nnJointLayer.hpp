@@ -113,7 +113,7 @@ public:
 		}
 
 	}
-	void backpropagation(double mu) {
+	void backpropagation() {
 
 		int sh = 0;
 		for(int i=0;i<_children.size();i++) {
@@ -124,7 +124,7 @@ public:
 		}
 
 	}
-	void updateParameters(int m, double alpha, double lambda) {
+	void updateParameters(int m, double alpha, double lambda, double mu) {
 
 
 

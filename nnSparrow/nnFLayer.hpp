@@ -162,22 +162,23 @@ public:
 		int n = _unit_count, np = _prev_unit_count;
 		double rm = 1.0 / m;
 
-		for(int i = 0; i < n; i++) {
-			for(int j = 0; j < np; j++) {
-				_u_dW[i*np+j] *= mu;
-			}
-		}
 		//_u_W = _u_W - alpha * ( rm * _u_dW + lambda * _u_W );
 		for(int i=0;i<n*np;i++) {
 			_u_W[i] -= alpha * (rm * _u_dW[i] + lambda * _u_W[i]);
 		}
 
-		for(int i=0;i<n;i++) {
-			_u_db[i] *= mu;
-		}
 		//_u_b = _u_b - alpha * ( rm * _u_db );
 		for(int i=0;i<n;i++) {
 			_u_b[i] -= alpha * (rm * _u_db[i]);
+		}
+
+		for(int i = 0; i < n; i++) {
+			for(int j = 0; j < np; j++) {
+				_u_dW[i*np+j] *= mu;
+			}
+		}
+		for(int i=0;i<n;i++) {
+			_u_db[i] *= mu;
 		}
 
 	}

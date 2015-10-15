@@ -289,21 +289,21 @@ public:
 		//cblas_dscal(nf*nm, 1-alpha*lambda, _u_conv, 1);
 		//cblas_daxpy(nf*nm, -alpha*rm, _u_dconv, 1, _u_conv, 1);
 
-		for(int i = 0; i < nm*nf; i++) {
-			_u_dconv[i] *= mu;
-		}
 		for(int i = 0; i < nf*nm; i++) {
 			_u_conv[i] -= alpha * ( rm * _u_dconv[i] + lambda * _u_conv[i] );
-		}
-
-		for(int mi = 0; mi < nm; mi++) {
-			_u_dconvb[mi] *= mu;
 		}
 
 		//_u_convb = _u_convb - alpha * (rm * _u_dconvb );
 		//cblas_daxpy(nm, -alpha*rm, _u_dconvb, 1, _u_convb, 1);
 		for(int i = 0; i < nm; i++) {
 			_u_convb[i] -= alpha * ( rm * _u_dconvb[i] );
+		}
+
+		for(int i = 0; i < nm*nf; i++) {
+			_u_dconv[i] *= mu;
+		}
+		for(int mi = 0; mi < nm; mi++) {
+			_u_dconvb[mi] *= mu;
 		}
 	}
 

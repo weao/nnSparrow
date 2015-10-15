@@ -92,22 +92,24 @@ int main()
   //load trained network
   //nn.load("weights.txt");
 
+  nnLayer *pl = NULL;
+
   //add input layer with 32 X 32 size and 1 channel
-  nn.addInputLayer(32, 32, 1);
+  pl = nn.addInputLayer(32, 32, 1);
 
   //nn.addPWSConvLayer(5, 5, 5, 5, 6);
 
   //add a full wights sharing convolutional layer with 5 X 5 filter size and 6 feature maps
-  nn.addFWSConvLayer(5, 5, 6);
+  pl = nn.addFWSConvLayer(pl, 5, 5, 6);
 
   //add a maxpooling layer with 2 X 2 filter size
-  nn.addMaxPoolingLayer(2, 2);
+  pl = nn.addMaxPoolingLayer(pl, 2, 2);
 
   //add a full connected layer with 120 units output, using tanh activation function.
-  nn.addFullLayer(120, TANH);
+  pl = nn.addFullLayer(pl, 120, TANH);
 
   //add a softmax layer(output layer) with #odim units output
-  nn.addSoftmaxLayer(odim);
+  nn.addSoftmaxLayer(pl, odim);
 
 
   cout<<"Start training..."<<endl;

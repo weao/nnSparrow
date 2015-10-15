@@ -52,7 +52,9 @@ protected:
 
 	void (*_call_back)(void*);
 	std::vector<nnLayer*> _layers;
-	double _gradient_alpha;
+	std::vector<nnInputLayer*> _inputlayers;
+	double _learning_decay_rate;
+	double _learning_rate;
 	double _weight_decay_parameter;
 	double _error_bound;
 	double _avg_error;
@@ -65,7 +67,7 @@ protected:
 public:
 	nnSparrow() {
 		_momentum = 0.9;
-		_gradient_alpha = 0.01;
+		_learning_rate = 0.01;
 		_weight_decay_parameter = 0.0001;
 		_error_bound = 0.01;
 		_epoch_count = 20;
@@ -73,6 +75,7 @@ public:
 		_avg_error = 0;
 		_ready = false;
 		_call_back = NULL;
+		_learning_decay_rate = 0.9;
 		_run_time = clock();
 
 	}
@@ -95,8 +98,8 @@ public:
 		_epoch_count = n;
 	}
 
-	void setGradientAlpha(double a) {
-		this->_gradient_alpha = a;
+	void setLearningRate(double a) {
+		this->_learning_rate = a;
 	}
 	void setWeightDecay(double d) {
 		this->_weight_decay_parameter = d;
@@ -107,6 +110,9 @@ public:
 	void setMomentum(double a) {
 		this->_momentum = a;
 	}
+	void setLearningDecayRate(double a) {
+		this->_learning_decay_rate = a;
+	}
 
 	double getAvgError() {
 		return this->_avg_error;
@@ -116,6 +122,10 @@ public:
 		while(!_layers.empty()) {
 			delete _layers.back();
 			_layers.pop_back();
+		}
+		while(!_inputlayers.empty()) {
+			delete _inputlayers.back();
+			_inputlayers.pop_back();
 		}
 		_ready = false;
 	}
@@ -132,7 +142,7 @@ public:
 	void save(const char *path) {
 
 		std::ofstream fout(path);
-		fout << _momentum << " " << _gradient_alpha << " " << _weight_decay_parameter << std::endl;
+		fout << _momentum << " " << _learning_rate << " " << _weight_decay_parameter << std::endl;
 		fout << _layers.size() << std::endl;
 		for(int i=0;i<_layers.size();i++) {
 			_layers[i]->write(fout);
@@ -142,7 +152,7 @@ public:
 	void load(const char *path) {
 
 		std::ifstream fin(path);
-		fin >> _momentum >> _gradient_alpha >> _weight_decay_parameter;
+		fin >> _momentum >> _learning_rate >> _weight_decay_parameter;
 		int n = 0;
 		fin >> n;
 		for(int i=0;i<n;i++) {
@@ -178,16 +188,17 @@ public:
 	}
 
 	nnLayer* addInputLayer(int w, int h, int ch) {
-		reset();
+		//reset();
 		nnInputLayer *l = new nnInputLayer(w, h, ch);
-		_layers.push_back(l);
+		//_layers.push_back(l);
+		_inputlayers.push_back(l);
 		return l;
 	}
 
-	nnLayer* addFWSConvLayer(int w, int h, int nm, int at = SIGMOID) {
-		if(_layers.empty())
-			return NULL;
-		nnLayer *pl = _layers.back();
+	nnLayer* addFWSConvLayer(nnLayer* pl, int w, int h, int nm, int at = SIGMOID) {
+		// if(_layers.empty())
+		// 	return NULL;
+		//nnLayer *pl = _layers.back();
 		nnFWSConvLayer *l = new nnFWSConvLayer(w, h, nm, at, pl, NULL);
 		_layers.push_back((nnLayer*)l);
 		if(pl) {
@@ -196,10 +207,10 @@ public:
 		return l;
 	}
 
-	nnLayer* addPWSConvLayer(int w, int h, int sw, int sh, int nm, int at = SIGMOID) {
-		if(_layers.empty())
-			return NULL;
-		nnLayer *pl = _layers.back();
+	nnLayer* addPWSConvLayer(nnLayer* pl, int w, int h, int sw, int sh, int nm, int at = SIGMOID) {
+		// if(_layers.empty())
+		// 	return NULL;
+		//nnLayer *pl = _layers.back();
 		nnPWSConvLayer *l = new nnPWSConvLayer(w, h, sw, sh, nm, at, pl);
 		_layers.push_back((nnLayer*)l);
 		if(pl) {
@@ -208,12 +219,21 @@ public:
 		return l;
 	}
 
+	nnLayer* addJointLayer(std::vector<nnLayer*> &ch) {
+		nnJointLayer *l = new nnJointLayer(ch);
+		_layers.push_back((nnLayer*)l);
+		for(int i=0;i<ch.size();i++) {
+			ch[i]->setNextLayer((nnLayer*)l);
+		}
+		return l;
+	}
 
-	nnLayer* addMaxPoolingLayer(int w, int h) {
 
-		if(_layers.empty())
-			return NULL;
-		nnLayer *pl = _layers.back();
+	nnLayer* addMaxPoolingLayer(nnLayer* pl, int w, int h) {
+
+		// if(_layers.empty())
+		// 	return NULL;
+		//nnLayer *pl = _layers.back();
 		nnMaxPoolingLayer *l = new nnMaxPoolingLayer(w, h, pl, NULL);
 		_layers.push_back((nnLayer*)l);
 		if(pl) {
@@ -223,11 +243,11 @@ public:
 
 	}
 
-	nnLayer* addAvgPoolingLayer(int w, int h) {
+	nnLayer* addAvgPoolingLayer(nnLayer* pl, int w, int h) {
 
-		if(_layers.empty())
-			return NULL;
-		nnLayer *pl = _layers.back();
+		// if(_layers.empty())
+		// 	return NULL;
+		//nnLayer *pl = _layers.back();
 		nnAvgPoolingLayer *l = new nnAvgPoolingLayer(w, h, pl, NULL);
 		_layers.push_back((nnLayer*)l);
 		if(pl) {
@@ -238,11 +258,11 @@ public:
 	}
 
 
-	nnLayer* addFullLayer(int n, int at = SIGMOID) {
+	nnLayer* addFullLayer(nnLayer* pl, int n, int at = SIGMOID) {
 
-		if(_layers.empty())
-			return NULL;
-		nnLayer *pl = _layers.back();
+		// if(_layers.empty())
+		// 	return NULL;
+		//nnLayer *pl = _layers.back();
 
 		nnFLayer *l = new nnFLayer(n, at, pl, NULL);
 		_layers.push_back((nnLayer*)l);
@@ -252,11 +272,11 @@ public:
 		return l;
 	}
 
-	nnLayer *addSoftmaxLayer(int n) {
+	nnLayer *addSoftmaxLayer(nnLayer* pl, int n) {
 
-			if(_layers.empty())
-				return NULL;
-			nnLayer *pl = _layers.back();
+			// if(_layers.empty())
+			// 	return NULL;
+			//nnLayer *pl = _layers.back();
 
 			nnFLayer *l = new nnSoftmaxLayer(n, pl, NULL);
 			_layers.push_back((nnLayer*)l);
@@ -272,17 +292,20 @@ public:
 		for(int i=0;i<_layers.size();i++) {
 			_layers[i]->init();
 		}
+		for(int i=0;i<_inputlayers.size();i++) {
+			_inputlayers[i]->init();
+		}
 
 	}
 
 
 
 	bool train(std::vector<std::vector<double> > &input, std::vector<int> &output) {
-		if(_layers.size() < 2)
+		if(_inputlayers.size() < 1 || _layers.size() < 1)
 			return false;
 		if(input.size() <= 0 || input.size() != output.size())
 			return false;
-		if(_layers.front()->getTotalUnitCount() != input[0].size())
+		if(_inputlayers.front()->getTotalUnitCount() != input[0].size())
 			return false;
 		if(!_ready) {
 			prepare();
@@ -292,7 +315,7 @@ public:
 		int sz = _layers.size();
 
 		int len = input.size();
-		int dim = input[0].size();
+		//int dim = input[0].size();
 		//int odim = output[0].size();
 		int odim = 0;
 		for(int i=0;i<output.size();i++) {
@@ -302,7 +325,7 @@ public:
 
 		double *ovec = new double[odim];
 
-		nnInputLayer *input_layer = (nnInputLayer*)_layers.front();
+		//nnInputLayer *input_layer = (nnInputLayer*)_layers.front();
 		nnFLayer *output_layer = (nnFLayer*)_layers.back();
 
 		int *rank = new int[len];
@@ -329,7 +352,7 @@ public:
 					// 	break;
 					_avg_error = E;
 					E = 0;
-					_gradient_alpha *= 0.9;
+					_learning_rate *= _learning_decay_rate;
 					if(this->_call_back)
 						this->_call_back(this);
 				}
@@ -339,9 +362,10 @@ public:
 			//printf("%d\n", idx);
 			idx = rank[idx];
 
-			input_layer->inputSample(&input[idx][0], dim);
+			for(int i=0;i<_inputlayers.size();i++)
+				_inputlayers[i]->inputSample(&input[idx][0], input[idx].size());
 
-			for(int j=1;j<sz;j++) {
+			for(int j=0;j<sz;j++) {
 				_layers[j]->forward();
 			}
 
@@ -356,13 +380,13 @@ public:
 				E += fabs(t);
 			}
 
-			for(int j=sz-1;j>0;j--) {
+			for(int j=sz-1;j>=0;j--) {
 				_layers[j]->backpropagation();
 			}
 
 			if(itr % _train_batch_count == 0) {
-				for(int j=sz-1;j>0;j--) {
-					_layers[j]->updateParameters(_train_batch_count, _gradient_alpha, _weight_decay_parameter, _momentum);
+				for(int j=sz-1;j>=0;j--) {
+					_layers[j]->updateParameters(_train_batch_count, _learning_rate, _weight_decay_parameter, _momentum);
 				}
 			}
 		}
@@ -375,14 +399,17 @@ public:
 
 	bool predict(std::vector<double> &input, int &output, double *ovec=NULL) {
 
-		if(_layers.size() < 2)
+		if(_inputlayers.size() < 1 || _layers.size() < 1)
 			return false;
 		int dim = input.size();
-		if(_layers.front()->getTotalUnitCount() != dim)
+		if(_inputlayers.front()->getTotalUnitCount() != dim)
 			return false;
+
+		for(int i=0;i<_inputlayers.size();i++)
+			_inputlayers[i]->inputSample(&input[0], dim);
+
 		int sz = _layers.size();
-		((nnInputLayer*)_layers.front())->inputSample(&input[0], dim);
-		for(int i=1;i<sz;i++)
+		for(int i=0;i<sz;i++)
 			_layers[i]->forward();
 
 		output = 0;

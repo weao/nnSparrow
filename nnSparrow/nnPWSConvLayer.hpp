@@ -351,8 +351,8 @@ public:
 		for(int i = 0; i < nm*nf*ns; i++) {
 			_u_dconv[i] *= mu;
 		}
-		for(int mi = 0; mi < nm*ns; mi++) {
-			_u_dconvb[mi] *= mu;
+		for(int i = 0; i < nm*ns; i++) {
+			_u_dconvb[i] *= mu;
 		}
 	}
 

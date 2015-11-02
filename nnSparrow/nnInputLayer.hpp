@@ -51,21 +51,12 @@ public:
     _u_a = NULL;
   }
   ~nnInputLayer() {
-    if(_u_a) {
-      delete [] _u_a;
-    }
   }
 
-  void clear() {
-    if(_u_a) {
-      delete [] _u_a;
-      _u_a = NULL;
-    }
-  }
 
   void init() {
 
-    clear();
+    nnLayer::clear();
     _u_a = new double[_unit_count];
     //_u_delta = new double[_unit_count];
   }
@@ -82,7 +73,7 @@ public:
   void updateDelta() {
 
   }
-	void backpropagation() {
+	void backpropagation(double mu) {
 
   }
 	void forward() {

@@ -87,7 +87,10 @@ public:
 		_u_b = NULL;
 	}
 	~nnLayer() {
+		clear();
+	}
 
+	void clear() {
 		if(_u_a)
 			delete [] _u_a;
 		if(_u_delta)
@@ -141,7 +144,7 @@ public:
 
 	virtual void init() = 0;
 	virtual void updateDelta() = 0;
-	virtual void backpropagation() = 0;
+	virtual void backpropagation(double) = 0;
 	virtual void forward() = 0;
 	virtual void updateParameters(int,double,double,double) = 0;
 	virtual int getTotalUnitCount() = 0;

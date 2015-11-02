@@ -113,7 +113,7 @@ public:
 		}
 
 	}
-	void backpropagation() {
+	void backpropagation(double mu) {
 
 		int sh = 0;
 		for(int i=0;i<_children.size();i++) {
@@ -139,14 +139,8 @@ public:
 	}
 
 	void clear() {
-		if(_u_a) {
-			delete [] _u_a;
-			_u_a = NULL;
-		}
-		if(_u_delta) {
-			delete [] _u_delta;
-			_u_delta = NULL;
-		}
+		nnLayer::clear();
+		_children.clear();
 	}
 
 	void write(std::ofstream &fout) {

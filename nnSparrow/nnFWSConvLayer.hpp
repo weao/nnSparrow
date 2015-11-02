@@ -155,13 +155,13 @@ public:
 		int fw = _filter_width;
 		int fh = _filter_height;
 
-		double *pa = _u_a;
-		double *ppa = _prev->getActivation();
-		double *pcv = _u_conv;
-		for(int mi = 0; mi < nm; mi++, pa += n, pcv += nf) {
+		double *ua = _u_a;
+		double *pua = _prev->getActivation();
+		double *cv = _u_conv;
+		for(int mi = 0; mi < nm; mi++, ua += n, cv += nf) {
 
 			for(int i = 0; i < n; i++)
-				*(pa + i) = _u_convb[mi];
+				*(ua + i) = _u_convb[mi];
 
 			for(int sh = 0; sh < np * nmp; sh += np) {
 				int step = 0, h = 0;
@@ -173,18 +173,18 @@ public:
 					double d = 0;
 					for(int j1 = 0, j2 = 0; j2 < nf; j1 += pw, j2 += fw ) {
 						for(int k = 0; k < fw; k++ ) {
-							d += (*(pcv + j2 + k)) * (*(ppa + sh + (step + j1) + k));
+							d += (*(cv + j2 + k)) * (*(pua + sh + (step + j1) + k));
 						}
 					}
-					*(pa + i) += d;
+					*(ua + i) += d;
 				}
 
 			}
 
-			_act_f(pa, n);
+			_act_f(ua, n);
 		}
 	}
-	void backpropagation() {
+	void backpropagation(double mu) {
 
 		//accumulate dW
 		//dW = _u_delta * _prev->getActivation().transpose();
@@ -201,13 +201,13 @@ public:
 		// 	_u_dconv[i] *= mu;
 		// }
 
-		double *pdc = _u_dconv;
+		double *dc = _u_dconv;
 
-		double *ppa = _prev->getActivation();
-		double *pdt = _u_delta;
+		double *pua = _prev->getActivation();
+		double *dt = _u_delta;
 
 		//feature map loop
-		for(int mi = 0; mi < nm; mi++, pdt += n, pdc += nf) {
+		for(int mi = 0; mi < nm; mi++, dt += n, dc += nf) {
 
 			//int sh = np * (mi / cc);
 			for(int sh = 0; sh < np * nmp; sh += np) {
@@ -217,10 +217,10 @@ public:
 						step = (step / pw + 1) * pw;
 						h = 0;
 					}
-					double d = *(pdt + i);
+					double d = *(dt + i);
 					for(int j1 = 0, j2 = 0; j2 < nf; j1 += pw, j2 += fw ) {
 						for(int k = 0; k < fw; k++ ) {
-							*(pdc + j2 + k) += d * (*(ppa + sh + (step + j1) + k));
+							*(dc + j2 + k) += d * (*(pua + sh + (step + j1) + k));
 						}
 					}
 				}
@@ -228,11 +228,11 @@ public:
 		}
 
 		//_u_dconvb = mu*_u_dconvb + _u_delta;
-		pdt = _u_delta;
-		for(int mi = 0; mi < nm; mi++, pdt += n) {
+		dt = _u_delta;
+		for(int mi = 0; mi < nm; mi++, dt += n) {
 			double sum = 0;
 			for(int i=0;i<n;i++) {
-				sum += pdt[i];
+				sum += dt[i];
 			}
 			// _u_dconvb[mi] *= mu;
 			_u_dconvb[mi] += sum;
@@ -240,13 +240,13 @@ public:
 
 		//t = (_u_W.transpose() * _u_delta); // [np, n] * [n, 1]
 		//_prev->updateDelta();
-		double *dst = _prev->getDelta();
-		if(dst) {
+		double *pdt = _prev->getDelta();
+		if(pdt) {
 
-			memset(dst, 0, sizeof(double)*_prev->getTotalUnitCount());
-			pdt = _u_delta;
-			double *pcv = _u_conv;
-			for(int mi = 0; mi < nm; mi++, pdt += n, pcv += nf) {
+			memset(pdt, 0, sizeof(double)*_prev->getTotalUnitCount());
+			dt = _u_delta;
+			double *cv = _u_conv;
+			for(int mi = 0; mi < nm; mi++, dt += n, cv += nf) {
 
 				//int sh = np * (mi / cc);
 				for(int sh = 0; sh < np * nmp; sh += np) {
@@ -256,10 +256,10 @@ public:
 							step = (step / pw + 1) * pw;
 							h = 0;
 						}
-						double d = *(pdt + i);
+						double d = *(dt + i);
 						for(int j1 = 0, j2 = 0; j2 < nf; j1 += pw, j2 += fw ) {
 							for(int k = 0; k < fw; k++ ) {
-								*(dst + sh + (step + j1) + k) += *(pcv + j2 + k) * d;
+								*(pdt + sh + (step + j1) + k) += *(cv + j2 + k) * d;
 							}
 						}
 					}
@@ -314,7 +314,7 @@ public:
 	}
 
 	void clear() {
-
+		nnLayer::clear();
 		if(_u_conv) {
 			delete [] _u_conv;
 			_u_conv = NULL;
@@ -323,16 +323,6 @@ public:
 			delete [] _u_convb;
 			_u_convb = NULL;
 		}
-		if(_u_a) {
-			delete [] _u_a;
-			_u_a = NULL;
-		}
-		if(_u_delta) {
-			delete [] _u_delta;
-			_u_delta = NULL;
-		}
-
-
 		if(_u_dconv) {
 			delete [] _u_dconv;
 			_u_dconv = NULL;

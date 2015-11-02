@@ -205,7 +205,7 @@ public:
 		}
 	}
 
-	void backpropagation() {
+	void backpropagation(double mu) {
 
 		double *ppd = _prev->getDelta();
 		const int n = _unit_count, np = _prev_unit_count, nm = _map_num;
@@ -235,18 +235,10 @@ public:
 	}
 
 	void clear() {
-
+		nnLayer::clear();
 		if(_u_cW) {
 			delete [] _u_cW;
 			_u_cW = NULL;
-		}
-		if(_u_a) {
-			delete [] _u_a;
-			_u_a = NULL;
-		}
-		if(_u_delta) {
-			delete [] _u_delta;
-			_u_delta = NULL;
 		}
 		if(_u_joint) {
 			delete [] _u_joint;

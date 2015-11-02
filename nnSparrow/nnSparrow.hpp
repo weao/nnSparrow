@@ -381,7 +381,7 @@ public:
 			}
 
 			for(int j=sz-1;j>=0;j--) {
-				_layers[j]->backpropagation();
+				_layers[j]->backpropagation(_momentum);
 			}
 
 			if(itr % _train_batch_count == 0) {

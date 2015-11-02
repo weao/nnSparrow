@@ -108,28 +108,28 @@ public:
 		int n = _unit_count, np = _prev_unit_count;
 		memcpy(_u_a, _u_b, n*sizeof(double));
 
-		double *pa = _prev->getActivation();
+		double *pua = _prev->getActivation();
 		for(int i=0;i<n;i++) {
 			double d = 0;
 			for(int j=0;j<np;j++) {
-				d += _u_W[i*np+j] * pa[j];
+				d += _u_W[i*np+j] * pua[j];
 			}
 			_u_a[i] += d;
 		}
 		_act_f(_u_a, n);
 
 	}
-	void backpropagation() {
+	void backpropagation(double mu) {
 
 		//accumulate dW, db
 		//_u_dW = mu*_u_dW + _u_delta * _prev->getActivation().transpose(); [n,1] * [1,np]
 		int n = _unit_count, np = _prev_unit_count;
-		double *pa = _prev->getActivation();
+		double *pua = _prev->getActivation();
 		for(int i = 0; i < n; i++) {
 			double d = _u_delta[i];
 			for(int j = 0; j < np; j++) {
 				//_u_dW[i*np+j] *= mu;
-				_u_dW[i*np+j] += d * pa[j];
+				_u_dW[i*np+j] += d * pua[j];
 			}
 		}
 
@@ -140,14 +140,14 @@ public:
 		}
 
 		//t = (_u_W.transpose() * _u_delta); // [np, n] * [n, 1]
-		double *pdelta = _prev->getDelta();
-		if(pdelta) {
+		double *pdt = _prev->getDelta();
+		if(pdt) {
 
-			memset(pdelta, 0, np*sizeof(double));
+			memset(pdt, 0, np*sizeof(double));
 			for(int j = 0; j < n; j++) {
 				double d = _u_delta[j];
 				for(int i = 0; i < np; i++) {
-					pdelta[i] += _u_W[j*np+i] * d;
+					pdt[i] += _u_W[j*np+i] * d;
 				}
 			}
 
@@ -210,23 +210,8 @@ public:
 	}
 
 	void clear() {
+		nnLayer::clear();
 
-		if(_u_W) {
-			delete [] _u_W;
-			_u_W = NULL;
-		}
-		if(_u_b) {
-			delete [] _u_b;
-			_u_b = NULL;
-		}
-		if(_u_a) {
-			delete [] _u_a;
-			_u_a = NULL;
-		}
-		if(_u_delta) {
-			delete [] _u_delta;
-			_u_delta = NULL;
-		}
 		if(_u_dW) {
 			delete [] _u_dW;
 			_u_dW = NULL;

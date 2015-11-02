@@ -38,7 +38,8 @@ typedef void (*activation)(double*, int);
 enum ACTIVATION_TYPE {
   SIGMOID = 0,
   TANH = 1,
-  RECTIFIER = 2
+  RECTIFIER = 2,
+  ORIGINAL = 3
 };
 
 class nnActivation {
@@ -46,12 +47,12 @@ class nnActivation {
 public:
   static activation getActivation(int type) {
 
-    static activation f[] = {nnActivation::sigmoid, nnActivation::tanh, nnActivation::rectifier};
+    static activation f[] = {nnActivation::sigmoid, nnActivation::tanh, nnActivation::rectifier, nnActivation::original};
     return f[type];
   }
   static activation getDActivation(int type) {
 
-    static activation df[] = {nnActivation::dsigmoid, nnActivation::dtanh, nnActivation::drectifier};
+    static activation df[] = {nnActivation::dsigmoid, nnActivation::dtanh, nnActivation::drectifier, nnActivation::doriginal};
     return df[type];
   }
 
@@ -97,6 +98,13 @@ public:
     for(int i=0;i<n;i++) {
       a[i] = (a[i] > 0) ? 1 : 0;
     }
+  }
+
+  static void original(double *a, int n) {
+  }
+
+  static void doriginal(double *a, int n) {
+
   }
 
 };

@@ -86,8 +86,8 @@ public:
 			h = 0;
 		}
 
-		this->_section_rows = ceil(double(w)/sw);
-		this->_section_cols = ceil(double(h)/sh);
+		this->_section_cols = ceil(double(w)/sw);
+		this->_section_rows = ceil(double(h)/sh);
 
 		this->_unit_count = w * h;
 		this->_width = w;
@@ -171,23 +171,25 @@ public:
 		int pw = _prev->getWidth();
 		int fw = _filter_width;
 		int fh = _filter_height;
+
+		//number of sections of a feature map
 		int ns = _section_rows * _section_cols;
 
-		double *pa = _u_a;
-		double *ppa = _prev->getActivation();
-		double *pcv = _u_conv;
-		for(int mi = 0; mi < nm; mi++, pa += n, pcv += nf) {
+		double *ua = _u_a;
+		double *pua = _prev->getActivation();
+		double *cv = _u_conv;
+		for(int mi = 0; mi < nm; mi++, ua += n, cv += nf*ns) {
 
 			int x = 0, y = 0;
 			for(int i = 0; i < n; i++, x++) {
 				if(x >= _width) {
 					x = 0; y++;
 				}
-				*(pa + i) = _u_convb[mi*ns + getSection(y,x)];
+				*(ua + i) = _u_convb[mi*ns + getSection(y,x)];
 			}
 
-			// ppast - start position of feature map of ppa
-			for(int ppast = 0; ppast < np * nmp; ppast += np) {
+			// puast - start position of feature map of pua
+			for(int puast = 0; puast < np * nmp; puast += np) {
 
 				int x = 0, y = 0;
 				int step = 0;
@@ -197,21 +199,26 @@ public:
 						x = 0; y++;
 					}
 					int sec = getSection(y,x);
+					//printf("%d %d %d\n", y, x, sec);
 					double d = 0;
 					for(int j1 = 0, j2 = 0; j2 < nf; j1 += pw, j2 += fw ) {
 						for(int k = 0; k < fw; k++ ) {
-							d += (*(pcv + sec + j2 + k)) * (*(ppa + ppast + (step + j1) + k));
+
+						//	printf("%lf\n", (*(cv + sec*nf + j2 + k)) * (*(pua + puast + (step + j1) + k)));
+							d += (*(cv + sec*nf + j2 + k)) * (*(pua + puast + (step + j1) + k));
 						}
 					}
-					*(pa + i) += d;
+					//printf("sum: %lf\n", *(ua+i));
+					*(ua + i) += d;
+					//printf("sum: %lf\n", *(ua+i));
 				}
-
+				//printf("\n");
 			}
 
-			_act_f(pa, n);
+			_act_f(ua, n);
 		}
 	}
-	void backpropagation() {
+	void backpropagation(double mu) {
 
 		//accumulate dW
 		//dW = _u_delta * _prev->getActivation().transpose();
@@ -223,19 +230,17 @@ public:
 		int fw = _filter_width;
 		int fh = _filter_height;
 
-		//cblas_dscal(nm*nf, mu, _u_dconv, 1);
-		// for(int i = 0; i < nm*nf; i++) {
-		// 	_u_dconv[i] *= mu;
-		// }
+		//number of sections of a feature map
+		int ns = _section_rows * _section_cols;
 
-		double *pdc = _u_dconv;
+		double *dc = _u_dconv;
 
-		double *ppa = _prev->getActivation();
-		double *pdt = _u_delta;
-		for(int mi = 0; mi < nm; mi++, pdt += n, pdc += nf) {
+		double *pua = _prev->getActivation();
+		double *dt = _u_delta;
+		for(int mi = 0; mi < nm; mi++, dt += n, dc += nf*ns) {
 
-			//int ppast = np * (mi / cc);
-			for(int ppast = 0; ppast < np * nmp; ppast += np) {
+			//int puast = np * (mi / cc);
+			for(int puast = 0; puast < np * nmp; puast += np) {
 				int step = 0, x = 0, y = 0;
 				for(int i = 0; i < n; i++, x++, step++ ) {
 					if(x >= _width) {
@@ -243,10 +248,10 @@ public:
 						x = 0; y++;
 					}
 					int sec = getSection(y,x);
-					double d = *(pdt + i);
+					double d = *(dt + i);
 					for(int j1 = 0, j2 = 0; j2 < nf; j1 += pw, j2 += fw ) {
 						for(int k = 0; k < fw; k++ ) {
-							*(pdc + sec + j2 + k) += d * (*(ppa + ppast + (step + j1) + k));
+							*(dc + sec*nf + j2 + k) += d * (*(pua + puast + (step + j1) + k));
 						}
 					}
 				}
@@ -254,11 +259,11 @@ public:
 		}
 
 		//_u_dconvb = mu*_u_dconvb + _u_delta;
-		pdt = _u_delta;
-		for(int mi = 0; mi < nm; mi++, pdt += n) {
+		dt = _u_delta;
+		for(int mi = 0; mi < nm; mi++, dt += n) {
 			double sum = 0;
 			for(int i=0;i<n;i++) {
-				sum += pdt[i];
+				sum += dt[i];
 			}
 			//_u_dconvb[mi] *= mu;
 			_u_dconvb[mi] += sum;
@@ -266,16 +271,16 @@ public:
 
 		//t = (_u_W.transpose() * _u_delta); // [np, n] * [n, 1]
 		//_prev->updateDelta();
-		double *dst = _prev->getDelta();
-		if(dst) {
+		double *pdt = _prev->getDelta();
+		if(pdt) {
 
-			memset(dst, 0, sizeof(double)*_prev->getTotalUnitCount());
-			pdt = _u_delta;
-			double *pcv = _u_conv;
-			for(int mi = 0; mi < nm; mi++, pdt += n, pcv += nf) {
+			memset(pdt, 0, sizeof(double)*_prev->getTotalUnitCount());
+			dt = _u_delta;
+			double *cv = _u_conv;
+			for(int mi = 0; mi < nm; mi++, dt += n, cv += nf*ns) {
 
-				//int ppast = np * (mi / cc);
-				for(int ppast = 0; ppast < np * nmp; ppast += np) {
+				//int puast = np * (mi / cc);
+				for(int puast = 0; puast < np * nmp; puast += np) {
 					int step = 0, x = 0, y = 0;
 					for(int i = 0; i < n; i++, x++, step++ ) {
 						if(x >= _width) {
@@ -283,10 +288,10 @@ public:
 							x = 0; y++;
 						}
 						int sec = getSection(y,x);
-						double d = *(pdt + i);
+						double d = *(dt + i);
 						for(int j1 = 0, j2 = 0; j2 < nf; j1 += pw, j2 += fw ) {
 							for(int k = 0; k < fw; k++ ) {
-								*(dst + ppast + (step + j1) + k) += *(pcv + sec + j2 + k) * d;
+								*(pdt + puast + (step + j1) + k) += *(cv + sec*nf + j2 + k) * d;
 							}
 						}
 					}
@@ -313,9 +318,6 @@ public:
 		int n = _unit_count, nf = _filter_size, nm = _map_num, ns = _section_cols * _section_rows;
 		double rm = 1.0 / m;
 
-		for(int i = 0; i < nm*nf; i++) {
-			_u_dconv[i] *= mu;
-		}
 		//_u_conv = _u_conv - alpha * ( rm * _u_dconv + lambda * _u_conv );
 		//cblas_dscal(nf*nm, 1-alpha*lambda, _u_conv, 1);
 		//cblas_daxpy(nf*nm, -alpha*rm, _u_dconv, 1, _u_conv, 1);
@@ -323,13 +325,17 @@ public:
 			_u_conv[i] -= alpha * ( rm * _u_dconv[i] + lambda * _u_conv[i] );
 		}
 
-		for(int mi = 0; mi < nm; mi++) {
-			_u_dconvb[mi] *= mu;
-		}
 		//_u_convb = _u_convb - alpha * (rm * _u_dconvb );
 		//cblas_daxpy(nm, -alpha*rm, _u_dconvb, 1, _u_convb, 1);
 		for(int i = 0; i < nm*ns; i++) {
 			_u_convb[i] -= alpha * ( rm * _u_dconvb[i] );
+		}
+
+		for(int i = 0; i < nm*nf; i++) {
+			_u_dconv[i] *= mu;
+		}
+		for(int mi = 0; mi < nm; mi++) {
+			_u_dconvb[mi] *= mu;
 		}
 	}
 
@@ -340,7 +346,7 @@ public:
 	}
 
 	void clear() {
-
+		nnLayer::clear();
 		if(_u_conv) {
 			delete [] _u_conv;
 			_u_conv = NULL;
@@ -349,15 +355,6 @@ public:
 			delete [] _u_convb;
 			_u_convb = NULL;
 		}
-		if(_u_a) {
-			delete [] _u_a;
-			_u_a = NULL;
-		}
-		if(_u_delta) {
-			delete [] _u_delta;
-			_u_delta = NULL;
-		}
-
 
 		if(_u_dconv) {
 			delete [] _u_dconv;

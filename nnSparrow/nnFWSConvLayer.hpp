@@ -209,7 +209,6 @@ public:
 		//feature map loop
 		for(int mi = 0; mi < nm; mi++, dt += n, dc += nf) {
 
-			//int sh = np * (mi / cc);
 			for(int sh = 0; sh < np * nmp; sh += np) {
 				int step = 0, h = 0;
 				for(int i = 0; i < n; i++, h++, step++ ) {

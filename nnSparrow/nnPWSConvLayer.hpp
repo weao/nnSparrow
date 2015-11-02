@@ -118,6 +118,10 @@ public:
 	double *getDConv() {
 		return _u_dconv;
 	}
+	double *getDConvb() {
+		return _u_dconvb;
+	}
+
 	double *getConv() {
 		return _u_conv;
 	}
@@ -249,9 +253,11 @@ public:
 					}
 					int sec = getSection(y,x);
 					double d = *(dt + i);
+					//printf("\n%d %d %d %lf\n\n", y, x, sec, d);
 					for(int j1 = 0, j2 = 0; j2 < nf; j1 += pw, j2 += fw ) {
 						for(int k = 0; k < fw; k++ ) {
 							*(dc + sec*nf + j2 + k) += d * (*(pua + puast + (step + j1) + k));
+						//	printf("%d %lf\n", sec*nf + j2 + k, (*(pua + puast + (step + j1) + k)));
 						}
 					}
 				}
@@ -259,14 +265,28 @@ public:
 		}
 
 		//_u_dconvb = mu*_u_dconvb + _u_delta;
+		// dt = _u_delta;
+		// for(int mi = 0; mi < nm; mi++, dt += n) {
+		// 	double sum = 0;
+		// 	for(int i=0;i<n;i++) {
+		// 		sum += dt[i];
+		// 	}
+		// 	//_u_dconvb[mi] *= mu;
+		// 	_u_dconvb[mi] += sum;
+		// }
+
 		dt = _u_delta;
-		for(int mi = 0; mi < nm; mi++, dt += n) {
-			double sum = 0;
-			for(int i=0;i<n;i++) {
-				sum += dt[i];
+		double *dcb = _u_dconvb;
+		for(int mi = 0; mi < nm; mi++, dt += n, dcb += ns) {
+			int x = 0, y = 0, step = 0;
+			for(int i = 0; i < n; i++, x++, step++ ) {
+				if(x >= _width) {
+					step = (step / pw + 1) * pw;
+					x = 0; y++;
+				}
+				int sec = getSection(y,x);
+				*(dcb + sec) += *(dt + i);
 			}
-			//_u_dconvb[mi] *= mu;
-			_u_dconvb[mi] += sum;
 		}
 
 		//t = (_u_W.transpose() * _u_delta); // [np, n] * [n, 1]
@@ -319,14 +339,11 @@ public:
 		double rm = 1.0 / m;
 
 		//_u_conv = _u_conv - alpha * ( rm * _u_dconv + lambda * _u_conv );
-		//cblas_dscal(nf*nm, 1-alpha*lambda, _u_conv, 1);
-		//cblas_daxpy(nf*nm, -alpha*rm, _u_dconv, 1, _u_conv, 1);
 		for(int i = 0; i < nf*nm*ns; i++) {
 			_u_conv[i] -= alpha * ( rm * _u_dconv[i] + lambda * _u_conv[i] );
 		}
 
 		//_u_convb = _u_convb - alpha * (rm * _u_dconvb );
-		//cblas_daxpy(nm, -alpha*rm, _u_dconvb, 1, _u_convb, 1);
 		for(int i = 0; i < nm*ns; i++) {
 			_u_convb[i] -= alpha * ( rm * _u_dconvb[i] );
 		}

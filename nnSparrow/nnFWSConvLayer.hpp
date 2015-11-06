@@ -46,6 +46,9 @@ private:
 	double* _u_convb;
 	double* _u_dconvb;
 
+	double *_u_vel;
+	double *_u_velb;
+
 
 public:
 	nnFWSConvLayer(nnLayer *prev=NULL) : nnLayer(prev, NULL) {
@@ -56,6 +59,8 @@ public:
 		_u_conv = NULL;
 		_u_dconv = NULL;
 		_u_dconvb = NULL;
+		_u_vel = NULL;
+		_u_velb = NULL;
 	}
 
 	nnFWSConvLayer(int fw, int fh, int nm, int at, nnLayer *prev, nnLayer *next = NULL) : 	nnLayer(prev, next) {
@@ -89,6 +94,8 @@ public:
 		_u_dconv = NULL;
 		_u_convb = NULL;
 		_u_dconvb = NULL;
+		_u_vel = NULL;
+		_u_velb = NULL;
 
 	}
 	~nnFWSConvLayer() {
@@ -101,6 +108,10 @@ public:
 			delete [] _u_convb;
 		if(_u_dconvb)
 			delete [] _u_dconvb;
+		if(_u_vel)
+			delete [] _u_vel;
+		if(_u_velb)
+			delete [] _u_velb;
 	}
 
 	double *getDConv() {
@@ -135,6 +146,8 @@ public:
 		_u_dconv = new double[nf*nm];
 		memset(_u_dconv, 0, nf*nm*sizeof(double));
 
+		_u_vel = new double[nf*nm];
+		memset(_u_vel, 0, nf*nm*sizeof(double));
 
 		//bias
 		_u_convb = new double[nm];
@@ -143,6 +156,9 @@ public:
 		}
 		_u_dconvb = new double[nm];
 		memset(_u_dconvb, 0, nm*sizeof(double));
+
+		_u_velb = new double[nm];
+		memset(_u_velb, 0, nm*sizeof(double));
 
 	}
 
@@ -184,7 +200,7 @@ public:
 			_act_f(ua, n);
 		}
 	}
-	void backpropagation(double mu) {
+	void backpropagation() {
 
 		//accumulate dW
 		//dW = _u_delta * _prev->getActivation().transpose();
@@ -289,20 +305,22 @@ public:
 		//cblas_daxpy(nf*nm, -alpha*rm, _u_dconv, 1, _u_conv, 1);
 
 		for(int i = 0; i < nf*nm; i++) {
-			_u_conv[i] -= alpha * ( rm * _u_dconv[i] + lambda * _u_conv[i] );
+			_u_vel[i] = _u_vel[i]*mu + alpha * ( rm * _u_dconv[i] + lambda * _u_conv[i] );
+			_u_conv[i] -= _u_vel[i];
 		}
 
 		//_u_convb = _u_convb - alpha * (rm * _u_dconvb );
 		//cblas_daxpy(nm, -alpha*rm, _u_dconvb, 1, _u_convb, 1);
 		for(int i = 0; i < nm; i++) {
-			_u_convb[i] -= alpha * ( rm * _u_dconvb[i] );
+			_u_velb[i] = _u_velb[i]*mu + alpha * ( rm * _u_dconvb[i] );
+			_u_convb[i] -= _u_velb[i];
 		}
 
 		for(int i = 0; i < nm*nf; i++) {
-			_u_dconv[i] *= mu;
+			_u_dconv[i] = 0;
 		}
-		for(int mi = 0; mi < nm; mi++) {
-			_u_dconvb[mi] *= mu;
+		for(int i = 0; i < nm; i++) {
+			_u_dconvb[i] = 0;
 		}
 	}
 
@@ -329,6 +347,14 @@ public:
 		if(_u_dconvb) {
 			delete [] _u_dconvb;
 			_u_dconvb = NULL;
+		}
+		if(_u_vel) {
+			delete [] _u_vel;
+			_u_vel = NULL;
+		}
+		if(_u_velb) {
+			delete [] _u_velb;
+			_u_velb = NULL;
 		}
 	}
 

@@ -77,7 +77,7 @@ public:
 
 	void init() {
 
-		clear();
+		//clear();
 		int n = this->_unit_count;
 		if(n > 0) {
 			_u_a = new double[n]; //Eigen::MatrixXd::Zero(n,1);
@@ -105,6 +105,7 @@ public:
 	void forward() {
 
 		int sh = 0;
+
 		for(int i=0;i<_children.size();i++) {
 			double *pa = _children[i]->getActivation();
 			int n = _children[i]->getTotalUnitCount();
@@ -113,7 +114,7 @@ public:
 		}
 
 	}
-	void backpropagation(double mu) {
+	void backpropagation() {
 
 		int sh = 0;
 		for(int i=0;i<_children.size();i++) {

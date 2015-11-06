@@ -36,11 +36,15 @@ class nnFLayer : public nnLayer {
 protected:
 	double* _u_dW;
 	double* _u_db;
+	double* _u_vW;
+	double* _u_vb;
 
 public:
 	nnFLayer(nnLayer *prev=NULL) : nnLayer(prev, NULL) {
 		_u_dW = NULL;
 		_u_db = NULL;
+		_u_vW = NULL;
+		_u_vb = NULL;
 	}
 
 	nnFLayer(int n, int at, nnLayer *prev, nnLayer *next = NULL) :	nnLayer(prev, next) {
@@ -57,6 +61,8 @@ public:
 
 		_u_dW = NULL;
 		_u_db = NULL;
+		_u_vW = NULL;
+		_u_vb = NULL;
 
 		this->_layer_type = FULL_LAYER;
 	}
@@ -65,6 +71,10 @@ public:
 			delete [] _u_dW;
 		if(_u_db)
 			delete [] _u_db;
+		if(_u_vW)
+			delete [] _u_vW;
+		if(_u_vb)
+			delete [] _u_vb;
 	}
 
 
@@ -99,6 +109,12 @@ public:
 
 		_u_db = new double[n];
 		memset(_u_db, 0, n*sizeof(double));
+
+		_u_vW = new double[n*np];
+		memset(_u_vW, 0, n*np*sizeof(double));
+
+		_u_vb = new double[n];
+		memset(_u_vb, 0, n*sizeof(double));
 	}
 
 
@@ -119,7 +135,7 @@ public:
 		_act_f(_u_a, n);
 
 	}
-	void backpropagation(double mu) {
+	void backpropagation() {
 
 		//accumulate dW, db
 		//_u_dW = mu*_u_dW + _u_delta * _prev->getActivation().transpose(); [n,1] * [1,np]
@@ -164,21 +180,26 @@ public:
 
 		//_u_W = _u_W - alpha * ( rm * _u_dW + lambda * _u_W );
 		for(int i=0;i<n*np;i++) {
-			_u_W[i] -= alpha * (rm * _u_dW[i] + lambda * _u_W[i]);
+			_u_vW[i] = _u_vW[i] * mu + alpha * (rm * _u_dW[i] + lambda * _u_W[i]);
+			_u_W[i] -= _u_vW[i];
+			//_u_W[i] -= alpha * (rm * _u_dW[i] + lambda * _u_W[i]);
 		}
 
 		//_u_b = _u_b - alpha * ( rm * _u_db );
 		for(int i=0;i<n;i++) {
-			_u_b[i] -= alpha * (rm * _u_db[i]);
+			//_u_b[i] -= alpha * (rm * _u_db[i]);
+			_u_vb[i] = _u_vb[i] * mu + alpha * (rm * _u_db[i]);
+			_u_b[i] -= _u_vb[i];
+			//printf("%lf ", _u_b[i] );
 		}
 
 		for(int i = 0; i < n; i++) {
 			for(int j = 0; j < np; j++) {
-				_u_dW[i*np+j] *= mu;
+				_u_dW[i*np+j] = 0;
 			}
 		}
 		for(int i=0;i<n;i++) {
-			_u_db[i] *= mu;
+			_u_db[i] = 0;
 		}
 
 	}
@@ -220,6 +241,15 @@ public:
 			delete [] _u_db;
 			_u_db = NULL;
 		}
+		if(_u_vW) {
+			delete [] _u_vW;
+			_u_vW = NULL;
+		}
+		if(_u_vb) {
+			delete [] _u_vb;
+			_u_vb = NULL;
+		}
+
 	}
 	void write(std::ofstream &fout) {
 

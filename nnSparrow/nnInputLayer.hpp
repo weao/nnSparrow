@@ -73,7 +73,7 @@ public:
   void updateDelta() {
 
   }
-	void backpropagation(double mu) {
+	void backpropagation() {
 
   }
 	void forward() {

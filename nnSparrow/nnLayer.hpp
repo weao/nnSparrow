@@ -49,6 +49,7 @@ protected:
 	double* _u_W;
 	double* _u_b;
 
+
 	int _unit_count;
 	int _prev_unit_count;
 	int _width;
@@ -144,7 +145,7 @@ public:
 
 	virtual void init() = 0;
 	virtual void updateDelta() = 0;
-	virtual void backpropagation(double) = 0;
+	virtual void backpropagation() = 0;
 	virtual void forward() = 0;
 	virtual void updateParameters(int,double,double,double) = 0;
 	virtual int getTotalUnitCount() = 0;

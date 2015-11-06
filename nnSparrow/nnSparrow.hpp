@@ -69,7 +69,7 @@ public:
 		_momentum = 0.9;
 		_learning_rate = 0.01;
 		_weight_decay_parameter = 0.0001;
-		_error_bound = 0.01;
+		_error_bound = 0.00001;
 		_epoch_count = 20;
 		_train_batch_count = 10;
 		_avg_error = 0;
@@ -322,6 +322,7 @@ public:
 			if(output[i]+1 > odim)
 				odim = output[i]+1;
 		}
+		_avg_error = 100;
 
 		double *ovec = new double[odim];
 
@@ -348,8 +349,10 @@ public:
 
 				if(itr > 0) {
 					E /= len;
-					// if(itr>0 && E/odim < 0.1)
-					// 	break;
+					if(itr > 0 && fabs(E-_avg_error) < _error_bound) {
+							printf("%lf %lf\n", E, _avg_error );
+							break;
+					}
 					_avg_error = E;
 					E = 0;
 					_learning_rate *= _learning_decay_rate;
@@ -381,7 +384,7 @@ public:
 			}
 
 			for(int j=sz-1;j>=0;j--) {
-				_layers[j]->backpropagation(_momentum);
+				_layers[j]->backpropagation();
 			}
 
 			if(itr % _train_batch_count == 0) {

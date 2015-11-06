@@ -50,6 +50,9 @@ private:
 	double* _u_convb;
 	double* _u_dconvb;
 
+	double* _u_vel;
+	double* _u_velb;
+
 
 public:
 	nnPWSConvLayer(nnLayer *prev=NULL) : nnLayer(prev, NULL) {
@@ -64,6 +67,8 @@ public:
 		_u_conv = NULL;
 		_u_dconv = NULL;
 		_u_dconvb = NULL;
+		_u_vel = NULL;
+		_u_velb = NULL;
 	}
 
 	nnPWSConvLayer(int fw, int fh, int sw, int sh, int nm, int at, nnLayer *prev, nnLayer *next = NULL) : 	nnLayer(prev, next) {
@@ -101,6 +106,8 @@ public:
 		_u_dconv = NULL;
 		_u_convb = NULL;
 		_u_dconvb = NULL;
+		_u_vel = NULL;
+		_u_velb = NULL;
 
 	}
 	~nnPWSConvLayer() {
@@ -113,6 +120,10 @@ public:
 			delete [] _u_convb;
 		if(_u_dconvb)
 			delete [] _u_dconvb;
+		if(_u_vel)
+			delete [] _u_vel;
+		if(_u_velb)
+			delete [] _u_velb;
 	}
 
 	double *getDConv() {
@@ -152,6 +163,9 @@ public:
 		_u_dconv = new double[nf*nm*ns];
 		memset(_u_dconv, 0, nf*nm*ns*sizeof(double));
 
+		_u_vel = new double[nf*nm*ns];
+		memset(_u_vel, 0, nf*nm*ns*sizeof(double));
+
 
 		//bias
 		_u_convb = new double[nm*ns];
@@ -160,6 +174,9 @@ public:
 		}
 		_u_dconvb = new double[nm*ns];
 		memset(_u_dconvb, 0, nm*ns*sizeof(double));
+
+		_u_velb = new double[nm*ns];
+		memset(_u_velb, 0, nm*ns*sizeof(double));
 
 	}
 
@@ -222,7 +239,7 @@ public:
 			_act_f(ua, n);
 		}
 	}
-	void backpropagation(double mu) {
+	void backpropagation() {
 
 		//accumulate dW
 		//dW = _u_delta * _prev->getActivation().transpose();
@@ -263,17 +280,6 @@ public:
 				}
 			}
 		}
-
-		//_u_dconvb = mu*_u_dconvb + _u_delta;
-		// dt = _u_delta;
-		// for(int mi = 0; mi < nm; mi++, dt += n) {
-		// 	double sum = 0;
-		// 	for(int i=0;i<n;i++) {
-		// 		sum += dt[i];
-		// 	}
-		// 	//_u_dconvb[mi] *= mu;
-		// 	_u_dconvb[mi] += sum;
-		// }
 
 		dt = _u_delta;
 		double *dcb = _u_dconvb;
@@ -340,19 +346,26 @@ public:
 
 		//_u_conv = _u_conv - alpha * ( rm * _u_dconv + lambda * _u_conv );
 		for(int i = 0; i < nf*nm*ns; i++) {
-			_u_conv[i] -= alpha * ( rm * _u_dconv[i] + lambda * _u_conv[i] );
+			//_u_conv[i] *= mu;
+			_u_vel[i] = _u_vel[i] * mu + alpha * ( rm * _u_dconv[i] + lambda * _u_conv[i] );
+			_u_conv[i] -= _u_vel[i];
+			//_u_conv[i] -= alpha * ( rm * _u_dconv[i] + lambda * _u_conv[i] );
 		}
 
 		//_u_convb = _u_convb - alpha * (rm * _u_dconvb );
 		for(int i = 0; i < nm*ns; i++) {
-			_u_convb[i] -= alpha * ( rm * _u_dconvb[i] );
+			//_u_convb[i] *= mu;
+			_u_velb[i] = _u_velb[i] * mu + alpha * ( rm * _u_dconvb[i] );
+			_u_convb[i] -= _u_velb[i];
+			//_u_convb[i] -= alpha * ( rm * _u_dconvb[i] );
 		}
 
+
 		for(int i = 0; i < nm*nf*ns; i++) {
-			_u_dconv[i] *= mu;
+			_u_dconv[i] = 0;
 		}
 		for(int i = 0; i < nm*ns; i++) {
-			_u_dconvb[i] *= mu;
+			_u_dconvb[i] = 0;
 		}
 	}
 
@@ -380,6 +393,15 @@ public:
 		if(_u_dconvb) {
 			delete [] _u_dconvb;
 			_u_dconvb = NULL;
+		}
+
+		if(_u_vel) {
+			delete [] _u_vel;
+			_u_vel = NULL;
+		}
+		if(_u_velb) {
+			delete [] _u_velb;
+			_u_velb = NULL;
 		}
 	}
 

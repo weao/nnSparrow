@@ -37,11 +37,12 @@ class nnSoftmaxLayer : public nnFLayer {
 public:
 	nnSoftmaxLayer(nnLayer *prev=NULL) : nnFLayer(prev) {
 
+		this->_layer_type = SOFTMAX_LAYER;
 	}
 
 	nnSoftmaxLayer(int n, nnLayer *prev, nnLayer *next = NULL) :	nnFLayer(n, SIGMOID, prev, next) {
 
-		this->_layer_type = FULL_LAYER;
+		this->_layer_type = SOFTMAX_LAYER;
 	}
 
 	void forward() {

@@ -44,7 +44,8 @@ public:
 
 		_filter_width = 0;
 		_filter_height = 0;
-			_u_W_idx = NULL;
+		_u_W_idx = NULL;
+		_layer_type = AVG_POOLING_LAYER;
 
 	}
 	nnAvgPoolingLayer(int fw, int fh, nnLayer *prev, nnLayer *next = NULL) : nnLayer(prev, next) {
@@ -221,7 +222,6 @@ public:
 	}
 	void read(std::ifstream &fin) {
 
-		fin >> _layer_type;
 		fin >> _unit_count >> _prev_unit_count;
 		fin >> _filter_width >> _filter_height;
 		fin >> _width >> _height >> _map_num;

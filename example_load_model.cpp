@@ -41,7 +41,6 @@ void testResult(void *param) {
 
   nnSparrow *nn = (nnSparrow*)param;
 
-  printf("\nTime consumption: %.2lfs\n", double(clock()-nn->getRunTime())/CLOCKS_PER_SEC);
   int num = 0, cnum = 0;
   int ret = 0;
 
@@ -76,51 +75,8 @@ int main()
   test_data.resize(test_data.size());
   test_label.resize(test_label.size());
 
-
-  //input dimension
-  int idim = train_data[0].size();
-
-  //output dimension
-  int odim = *max_element(train_label.begin(), train_label.end())+1;
-
-
-  nn.setEpochCount(20);
-
-  //set callback funtion being called everytime when an epoch finished
-  nn.setCallbackFunction(testResult);
-
-  //load trained network
-  //nn.load("weights.txt");
-
-  nnLayer *pl = NULL;
-
-  //add input layer with 32 X 32 size and 1 channel
-  pl = nn.addInputLayer(32, 32, 1);
-
-  //nn.addPWSConvLayer(5, 5, 5, 5, 6);
-
-  //add a full wights sharing convolutional layer with 5 X 5 filter size and 6 feature maps
-  pl = nn.addFWSConvLayer(pl, 5, 5, 6);
-
-  //add a maxpooling layer with 2 X 2 filter size
-  pl = nn.addMaxPoolingLayer(pl, 2, 2);
-
-  //add a full connected layer with 120 units output, using tanh activation function.
-  pl = nn.addFullLayer(pl, 120, TANH);
-
-  //add a softmax layer(output layer) with #odim units output
-  nn.addSoftmaxLayer(pl, odim);
-
-
-  cout<<"Start training..."<<endl;
-  if(nn.train(train_data, train_label)) {
-    cout<<"Training finished!"<<endl;
-  }
-
+  nn.load("weights.txt");
   testResult(&nn);
-
-  //save network
-  nn.save("weights.txt");
 
 
   return 0;

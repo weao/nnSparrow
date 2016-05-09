@@ -26,12 +26,13 @@
 */
 
 #include "nnLayer.hpp"
+#include <cassert>
 
-#ifndef __NN_F_LAYER__
+#ifndef __NN_RANGE_LAYER__
 
-#define __NN_F_LAYER__
+#define __NN_RANGE_LAYER__
 
-class nnFLayer : public nnLayer {
+class nnRangeLayer : public nnLayer {
 
 protected:
 
@@ -40,25 +41,31 @@ protected:
 	double* _u_db;
 	double* _u_vW;
 	double* _u_vb;
+	int _range_start;
 
 public:
-	nnFLayer(nnLayer *prev=NULL) : nnLayer(prev, NULL) {
+	nnRangeLayer(nnLayer *prev=NULL) : nnLayer(prev, NULL) {
 		_u_dW = NULL;
 		_u_db = NULL;
 		_u_vW = NULL;
 		_u_vb = NULL;
 		_actv_type = SIGMOID;
 		_layer_type = FULL_LAYER;
+		_range_start = 0;
 	}
 
-	nnFLayer(int n, int at, nnLayer *prev, nnLayer *next = NULL) :	nnLayer(prev, next) {
+	nnRangeLayer(int st, int at, nnLayer *prev, nnLayer *next = NULL) :	nnLayer(prev, next) {
 
-		this->_unit_count = n;
+		assert(prev != NULL);
+
+		this->_width = prev->getWidth() - st + 1;
+		this->_height = prev->getHeight();
+
+		this->_range_start = st;
+
+		this->_unit_count = _width * _height;
 		this->_prev_unit_count = prev ? prev->getTotalUnitCount() : 0;
-		this->_width = n;
-		this->_height = 1;
 		this->_map_num = 1;
-
 
 
 		_u_dW = NULL;
@@ -67,9 +74,9 @@ public:
 		_u_vb = NULL;
 
 		this->_actv_type = at;
-		this->_layer_type = FULL_LAYER;
+		this->_layer_type = RANGE_LAYER;
 	}
-	~nnFLayer() {
+	~nnRangeLayer() {
 		if(_u_dW)
 			delete [] _u_dW;
 		if(_u_db)
@@ -130,13 +137,20 @@ public:
 		int n = _unit_count, np = _prev_unit_count;
 		memcpy(_u_a, _u_b, n*sizeof(double));
 
+		int pw = _prev->getWidth();
+		int ph = _prev->getHeight();
+
 		double *pua = _prev->getActivation();
-		for(int i=0;i<n;i++) {
-			double d = 0;
-			for(int j=0;j<np;j++) {
-				d += _u_W[i*np+j] * pua[j];
+		double *ua = _u_a;
+
+		for(int y = 0; y < ph; y++, pua += pw, ua += _width) {
+			for(int i = 0; i < _width; i++) {
+				double d = 0;
+				for(int j = 0; j < i+_range_start; j++) {
+					d += _u_W[y*_width*pw + i*pw + j] * pua[j];
+				}
+				ua[i] += d;
 			}
-			_u_a[i] += d;
 		}
 		_act_f(_u_a, n);
 
@@ -146,14 +160,21 @@ public:
 		//accumulate dW, db
 		//_u_dW = mu*_u_dW + _u_delta * _prev->getActivation().transpose(); [n,1] * [1,np]
 		int n = _unit_count, np = _prev_unit_count;
+
 		double *pua = _prev->getActivation();
-		for(int i = 0; i < n; i++) {
-			double d = _u_delta[i];
-			for(int j = 0; j < np; j++) {
-				//_u_dW[i*np+j] *= mu;
-				_u_dW[i*np+j] += d * pua[j];
+		double *dt = _u_delta;
+
+		int pw = _prev->getWidth();
+		int ph = _prev->getHeight();
+		for(int y = 0; y < ph; y++, pua += pw, dt += _width) {
+			for(int i = 0; i < _width; i++) {
+				double d = dt[i];
+				for(int j = 0; j < i+_range_start; j++) {
+					_u_dW[y*_width*pw + i*pw + j] += d * pua[j];
+				}
 			}
 		}
+
 
 		//_u_db = mu*_u_db + _u_delta;
 		for(int i=0;i<n;i++) {
@@ -161,20 +182,6 @@ public:
 		 	_u_db[i] += _u_delta[i];
 		}
 
-		//t = (_u_W.transpose() * _u_delta); // [np, n] * [n, 1]
-		double *pdt = _prev->getDelta();
-		if(pdt) {
-
-			memset(pdt, 0, np*sizeof(double));
-			for(int j = 0; j < n; j++) {
-				double d = _u_delta[j];
-				for(int i = 0; i < np; i++) {
-					pdt[i] += _u_W[j*np+i] * d;
-				}
-			}
-
-			_prev->updateDelta();
-		}
 
 
 	}

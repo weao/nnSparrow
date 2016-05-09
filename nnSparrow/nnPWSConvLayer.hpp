@@ -42,6 +42,11 @@ private:
 	int _section_height;
 	int _section_rows;
 	int _section_cols;
+	int _actv_type;
+
+	//you can use every _stride_x units for computing
+	int _stride_x;
+	int _stride_y;
 
 
 	double* _u_conv;
@@ -56,6 +61,7 @@ private:
 
 public:
 	nnPWSConvLayer(nnLayer *prev=NULL) : nnLayer(prev, NULL) {
+		_actv_type = SIGMOID;
 		_filter_size = 0;
 		_filter_width = 0;
 		_filter_height = 0;
@@ -71,20 +77,22 @@ public:
 		_u_velb = NULL;
 	}
 
-	nnPWSConvLayer(int fw, int fh, int sw, int sh, int nm, int at, nnLayer *prev, nnLayer *next = NULL) : 	nnLayer(prev, next) {
+	nnPWSConvLayer(int fw, int fh, int sw, int sh, int nm, int stpx, int stpy, int at, nnLayer *prev, nnLayer *next = NULL) : 	nnLayer(prev, next) {
 
 		this->_filter_width = fw;
 		this->_filter_height = fh;
+
 		this->_filter_size = fw * fh;
 		this->_map_num = nm;// * prev->getMapNum();
+		
 		this->_section_width = sw;
 		this->_section_height = sh;
+		this->_stride_x = stpx;
+		this->_stride_y = stpy;
 
-		this->_act_f = nnActivation::getActivation(at);
-		this->_d_act_f = nnActivation::getDActivation(at);
+		int w = prev ? 1 + (prev->getWidth() - fw) / stpx : 0;
+		int h = prev ? 1 + (prev->getHeight() - fh) / stpy : 0;
 
-		int w = prev ? 1 + (prev->getWidth() - fw) : 0;
-		int h = prev ? 1 + (prev->getHeight() - fh) : 0;
 
 		if(w < 0 || h < 0) {
 			w = 0;
@@ -98,8 +106,9 @@ public:
 		this->_width = w;
 		this->_height = h;
 		this->_prev_unit_count = prev ? prev->getUnitCount() : 0;
+		this->_actv_type = at;
+		this->_layer_type = PWS_CONV_LAYER;
 
-		this->_layer_type = 0; //FWS_CONV_LAYER;
 
 		//_u_dW = NULL;
 		_u_conv = NULL;
@@ -178,6 +187,9 @@ public:
 		_u_velb = new double[nm*ns];
 		memset(_u_velb, 0, nm*ns*sizeof(double));
 
+		this->_act_f = nnActivation::getActivation(_actv_type);
+		this->_d_act_f = nnActivation::getDActivation(_actv_type);
+
 	}
 
 	inline int getSection(int y, int x) {
@@ -206,7 +218,7 @@ public:
 				if(x >= _width) {
 					x = 0; y++;
 				}
-				*(ua + i) = _u_convb[mi*ns + getSection(y,x)];
+				*(ua + i) = _u_convb[mi*ns + getSection(y, x)];
 			}
 
 			// puast - start position of feature map of pua
@@ -214,14 +226,19 @@ public:
 
 				int x = 0, y = 0;
 				int step = 0;
-				for(int i = 0; i < n; i++, x++, step++ ) {
+
+				// x and y controls step
+				for(int i = 0; i < n; i++, x++, step += _stride_x) {
 					if(x >= _width) {
-						step = (step / pw + 1) * pw;
+						step = (step / pw + _stride_y) * pw;
 						x = 0; y++;
 					}
-					int sec = getSection(y,x);
+					int sec = getSection( y, x );
 					//printf("%d %d %d\n", y, x, sec);
 					double d = 0;
+
+					//j1 is vertical shift of pua
+					//j2 is vertical shift of conv filter
 					for(int j1 = 0, j2 = 0; j2 < nf; j1 += pw, j2 += fw ) {
 						for(int k = 0; k < fw; k++ ) {
 
@@ -263,12 +280,12 @@ public:
 			//int puast = np * (mi / cc);
 			for(int puast = 0; puast < np * nmp; puast += np) {
 				int step = 0, x = 0, y = 0;
-				for(int i = 0; i < n; i++, x++, step++ ) {
+				for(int i = 0; i < n; i++, x++, step += _stride_x ) {
 					if(x >= _width) {
-						step = (step / pw + 1) * pw;
+						step = (step / pw + _stride_y) * pw;
 						x = 0; y++;
 					}
-					int sec = getSection(y,x);
+					int sec = getSection( y, x );
 					double d = *(dt + i);
 					//printf("\n%d %d %d %lf\n\n", y, x, sec, d);
 					for(int j1 = 0, j2 = 0; j2 < nf; j1 += pw, j2 += fw ) {
@@ -284,10 +301,9 @@ public:
 		dt = _u_delta;
 		double *dcb = _u_dconvb;
 		for(int mi = 0; mi < nm; mi++, dt += n, dcb += ns) {
-			int x = 0, y = 0, step = 0;
-			for(int i = 0; i < n; i++, x++, step++ ) {
+			int x = 0, y = 0;
+			for(int i = 0; i < n; i++, x++ ) {
 				if(x >= _width) {
-					step = (step / pw + 1) * pw;
 					x = 0; y++;
 				}
 				int sec = getSection(y,x);
@@ -308,12 +324,12 @@ public:
 				//int puast = np * (mi / cc);
 				for(int puast = 0; puast < np * nmp; puast += np) {
 					int step = 0, x = 0, y = 0;
-					for(int i = 0; i < n; i++, x++, step++ ) {
+					for(int i = 0; i < n; i++, x++, step += _stride_x ) {
 						if(x >= _width) {
-							step = (step / pw + 1) * pw;
+							step = (step / pw + _stride_y) * pw;
 							x = 0; y++;
 						}
-						int sec = getSection(y,x);
+						int sec = getSection( y, x );
 						double d = *(dt + i);
 						for(int j1 = 0, j2 = 0; j2 < nf; j1 += pw, j2 += fw ) {
 							for(int k = 0; k < fw; k++ ) {
@@ -408,32 +424,43 @@ public:
 	void write(std::ofstream &fout) {
 
 		fout << _layer_type << std::endl;
+		fout << _actv_type << " ";
 		fout << _unit_count << " " << _prev_unit_count << " ";
 		fout << _filter_width << " " << _filter_height << " ";
+		fout << _section_width << " " << _section_height << " ";
+		fout << _section_rows << " " << _section_cols << " ";
 		fout << _width << " " << _height << " " << _map_num << std::endl;
-		for(int i=0;i<_filter_size*_map_num;i++) {
+
+		int ns = _section_rows * _section_cols;
+		for(int i=0;i<_filter_size*ns*_map_num;i++) {
 			fout << _u_conv[i] << " ";
 		}
 		fout<<std::endl;
-		for(int i=0;i<_map_num;i++) {
+		for(int i=0;i<_map_num*ns;i++) {
 			fout << _u_convb[i] << " ";
 		}
 		fout<<std::endl;
 	}
 	void read(std::ifstream &fin) {
 
+		fin >> _actv_type;
 		fin >> _unit_count >> _prev_unit_count;
 		fin >> _filter_width >> _filter_height;
+		fin >> _section_width >> _section_height;
+		fin >> _section_rows >> _section_cols;
 		fin >> _width >> _height >> _map_num;
+
 
 		_filter_size = _filter_width * _filter_height;
 
+		int ns = _section_rows * _section_cols;
+
 		init();
 
-		for(int i=0;i<_filter_size*_map_num;i++) {
+		for(int i=0;i<_filter_size*_map_num*ns;i++) {
 			fin >> _u_conv[i];
 		}
-		for(int i=0;i<_map_num;i++) {
+		for(int i=0;i<_map_num*ns;i++) {
 			fin >> _u_convb[i];
 		}
 

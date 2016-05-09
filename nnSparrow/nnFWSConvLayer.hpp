@@ -39,6 +39,8 @@ private:
 	int _filter_height;
 	int _filter_size;
 
+	int _actv_type;
+
 
 	double* _u_conv;
 	double* _u_dconv;
@@ -61,6 +63,8 @@ public:
 		_u_dconvb = NULL;
 		_u_vel = NULL;
 		_u_velb = NULL;
+		_actv_type = SIGMOID;
+		_layer_type = FWS_CONV_LAYER;
 	}
 
 	nnFWSConvLayer(int fw, int fh, int nm, int at, nnLayer *prev, nnLayer *next = NULL) : 	nnLayer(prev, next) {
@@ -69,9 +73,6 @@ public:
 		this->_filter_height = fh;
 		this->_filter_size = fw * fh;
 		this->_map_num = nm;// * prev->getMapNum();
-
-		this->_act_f = nnActivation::getActivation(at);
-		this->_d_act_f = nnActivation::getDActivation(at);
 
 		int w = prev ? 1 + (prev->getWidth() - fw) : 0;
 		int h = prev ? 1 + (prev->getHeight() - fh) : 0;
@@ -87,6 +88,7 @@ public:
 		this->_height = h;
 		this->_prev_unit_count = prev ? prev->getUnitCount() : 0;
 
+		this->_actv_type = at;
 		this->_layer_type = FWS_CONV_LAYER;
 
 		//_u_dW = NULL;
@@ -159,6 +161,9 @@ public:
 
 		_u_velb = new double[nm];
 		memset(_u_velb, 0, nm*sizeof(double));
+
+		this->_act_f = nnActivation::getActivation(_actv_type);
+		this->_d_act_f = nnActivation::getDActivation(_actv_type);
 
 	}
 
@@ -361,6 +366,7 @@ public:
 	void write(std::ofstream &fout) {
 
 		fout << _layer_type << std::endl;
+		fout<< _actv_type << " ";
 		fout << _unit_count << " " << _prev_unit_count << " ";
 		fout << _filter_width << " " << _filter_height << " ";
 		fout << _width << " " << _height << " " << _map_num << std::endl;
@@ -375,6 +381,7 @@ public:
 	}
 	void read(std::ifstream &fin) {
 
+		fin >> _actv_type;
 		fin >> _unit_count >> _prev_unit_count;
 		fin >> _filter_width >> _filter_height;
 		fin >> _width >> _height >> _map_num;

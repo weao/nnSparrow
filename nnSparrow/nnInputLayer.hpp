@@ -37,7 +37,7 @@ class nnInputLayer : public nnLayer {
 public:
   nnInputLayer() : nnLayer(NULL, NULL) {
 
-
+    this->_layer_type = INPUT_LAYER;
   }
 
   nnInputLayer(int w, int h, int ch) : nnLayer(NULL, NULL) {

@@ -48,6 +48,7 @@ public:
 		_u_joint = NULL;
 		_u_cW = NULL;
 		_u_W_idx = NULL;
+		_layer_type = MAX_POOLING_LAYER;
 
 	}
 
@@ -116,6 +117,7 @@ public:
 
 		if(!_prev)
 			return;
+
 
 		int pw = _prev->getWidth();
 		int ph = _prev->getHeight();

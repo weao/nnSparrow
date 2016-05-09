@@ -41,6 +41,8 @@
 class nnLayer {
 
 protected:
+	int _layer_id;
+
 	nnLayer* _prev;
 	nnLayer* _next;
 
@@ -66,8 +68,10 @@ public:
 		MAX_POOLING_LAYER,
 		AVG_POOLING_LAYER,
 		FWS_CONV_LAYER,
+		PWS_CONV_LAYER,
 		FULL_LAYER,
-		SOFTMAX_LAYER
+		SOFTMAX_LAYER,
+		RANGE_LAYER
 	};
 
 	nnLayer(nnLayer *prev, nnLayer *next) {

@@ -120,7 +120,7 @@ int main()
   testResult(&nn);
 
   //save network
-  nn.save("weights.txt");
+  nn.save("model.txt");
 
 
   return 0;

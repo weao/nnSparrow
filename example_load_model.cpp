@@ -75,7 +75,7 @@ int main()
   test_data.resize(test_data.size());
   test_label.resize(test_label.size());
 
-  nn.load("weights.txt");
+  nn.load("model.txt");
   testResult(&nn);
 
 

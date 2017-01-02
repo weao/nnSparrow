@@ -4,15 +4,15 @@ nnSparrow
 The code is tested on Ubuntu 14.04 LTS
 
 > **How to Use:**
-> 1. RUN example: Just type 'make' under command line, then type './example'.
-> 2. IMPORT nnSparrow: Just include all *.hpp files into your project.
+>- 1. RUN example: Just type 'make' under command line, then type './example'.
+>- 2. IMPORT nnSparrow: Just include all *.hpp files into your project.
 
 --------------------------------
 
 > **Features:**
-> 1. No required external libraries.
-> 2. Fast on CPU.
-> 3. Easy to use.
+>- 1. No required external libraries.
+>- 2. Fast on CPU.
+>- 3. Easy to use.
 
 --------------------------------
 

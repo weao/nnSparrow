@@ -106,7 +106,7 @@ int main()
   pl = nn.addMaxPoolingLayer(pl, 2, 2);
 
   //add a full connected layer with 120 units output, using tanh activation function.
-  pl = nn.addFullLayer(pl, 120, TANH);
+  pl = nn.addFullLayer(pl, 120, RECTIFIER);
 
   //add a softmax layer(output layer) with #odim units output
   nn.addSoftmaxLayer(pl, odim);

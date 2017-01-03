@@ -31,7 +31,7 @@ nnLayer* addFullLayer(nnLayer* pl, int n, int at = SIGMOID);
 // Add a fully connected layer. 
 // pl: previous layer to connect
 // n: number of units
-// at: type of activation function
+// at: type of activation function (SIGMOID, TANH, RECTIFIER, SOFTPLUS, ORIGINAL)
 ```
 ```
 nnLayer *addSoftmaxLayer(nnLayer* pl, int n);
@@ -43,8 +43,8 @@ nnLayer *addSoftmaxLayer(nnLayer* pl, int n);
 nnLayer* addFWSConvLayer(nnLayer* pl, int w, int h, int nm, int at = SIGMOID);
 // Add a full weights sharing convolution layer.
 // pl: previous layer to connect
-// w: input width
-// h: input height
+// w: filter width
+// h: filter height
 // nm: number of feature maps
 // at: type of activation function
 ```
@@ -52,8 +52,8 @@ nnLayer* addFWSConvLayer(nnLayer* pl, int w, int h, int nm, int at = SIGMOID);
 nnLayer* addPWSConvLayer(nnLayer* pl, int w, int h, int sw, int sh, int nm, int stpx = 1, int stpy = 1, int at = SIGMOID);
 // Add a partial weights sharing convolution layer.
 // pl: previous layer to connect
-// w: input width
-// h: input height
+// w: filter width
+// h: filter height
 // nm: number of feature maps
 // sw: section width
 // hw: section height
@@ -65,22 +65,26 @@ nnLayer* addPWSConvLayer(nnLayer* pl, int w, int h, int sw, int sh, int nm, int 
 nnLayer* addMaxPoolingLayer(nnLayer* pl, int w, int h);
 // Add a max pooling layer.
 // pl: previous layer to connect
-// w: input width
-// h: input height
+// w: filter width
+// h: filter height
 ```
 ```
 nnLayer* addAvgPoolingLayer(nnLayer* pl, int w, int h);
 // Add an average pooling layer.
 // pl: previous layer to connect
-// w: input width
-// h: input height
+// w: filter width
+// h: filter height
 ```
 **2. Train & Predict**
 ```
 bool train(std::vector<std::vector<double> > &samples, std::vector<int> &labels);
+// samples: training data samples, each sample is presented as a vector.
+// labels: training labels corresponded to the data samples.
 ```
 ```
 bool predict(std::vector<double> &sample, int &label, double *ovec=NULL);
+// sample: input data sample
+// label: outputed label of the input data sample.
 ```
 ```
 void load(const char *path);
@@ -91,7 +95,7 @@ void save(const char *path);
 **3. Configuration**
 ```
 int getLayerCount();
-// Get the number of layers.
+// Get the number of layers in the model.
 ```
 ```
 double getAvgError();
@@ -99,7 +103,7 @@ double getAvgError();
 ```
 ```
 clock_t getRunTime();
-// Get the running time.
+// Get the total training time.
 ```
 ```
 void reset();
@@ -107,31 +111,25 @@ void reset();
 ```
 ```
 void setLearningRate(double a);
-// Set the learning rate
 ```
 ```
 void setLearningDecayRate(double a);
-// Set the learning decay rate.
 ```
 ```
 void setWeightDecay(double d);
-// Set the weight decay parameter.
 ```
 ```
 void setMomentum(double a);
-// Set the momentum parameter.
 ```
 ```
 void setTrainBatchCount(int n);
-// Set the training batch count.
 ```
 ```
 void setErrorBound(double err);
-// Set the error bound.
+// Set the maximum training error to terminate the optimization.
 ```
 ```
 void setEpochCount(int n);
-// Set the training epoch count.
 ```
 ```
 void setCallbackFunction(void (*f)(void*));
